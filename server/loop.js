@@ -82,6 +82,18 @@ export async function runTask({ task, robot, marketplace, reasoningResult, diagn
   });
   await sleep(delayMs);
 
+  // Defensive guard: if the marketplace has nothing for this capability, end
+  // gracefully instead of crashing. (All seeded tasks have candidates.)
+  if (candidates.length === 0) {
+    emit({
+      stage: 'RECEIPT',
+      status: 'fail',
+      title: 'No skill available',
+      text: `The marketplace has no skill that provides "${task.requiredCapability}" yet.`,
+    });
+    return { purchased: false };
+  }
+
   // 4. REASON (OpenAI) ----------------------------------------------------
   const rs = reasoningResult || (await reason(dg.data.diagnosis, candidates, task, robot));
   let chosen = candidates.find((c) => c.id === rs.data.chosen_skill_id) || candidates[0];
