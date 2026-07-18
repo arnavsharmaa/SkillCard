@@ -14,6 +14,7 @@ const TABS = [
 export default function App() {
   const [tab, setTab] = useState('live');
   const [state, setState] = useState(null);
+  const [resetCount, setResetCount] = useState(0);
 
   const refresh = useCallback(async () => {
     try {
@@ -30,6 +31,9 @@ export default function App() {
   const handleReset = async () => {
     await resetState();
     await refresh();
+    // Remount LiveRun so the stage returns to script defaults: cleared
+    // timeline, task-01 + Atlas-7 selected, failure sim off.
+    setResetCount((n) => n + 1);
   };
 
   if (!state) {
@@ -84,7 +88,7 @@ export default function App() {
       </header>
 
       <main className="mx-auto max-w-7xl w-full px-6 py-7 flex-1">
-        {tab === 'live' && <LiveRun state={state} onComplete={refresh} />}
+        {tab === 'live' && <LiveRun key={resetCount} state={state} onComplete={refresh} />}
         {tab === 'receipts' && <Receipts state={state} />}
         {tab === 'fleet' && <Fleet state={state} />}
       </main>
