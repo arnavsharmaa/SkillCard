@@ -43,5 +43,23 @@ export async function resolveWithOperator(escalationId) {
   return r.json();
 }
 
+// Approve a flagged (over-ceiling) purchase as-is.
+export async function approvePurchase(receiptId) {
+  const r = await fetch(`/api/approve/${receiptId}`, { method: 'POST' });
+  if (!r.ok) throw new Error('approve failed');
+  return r.json();
+}
+
+// Human picks a different skill from the marketplace for a flagged purchase.
+export async function chooseSkill(receiptId, skillId) {
+  const r = await fetch(`/api/skill-choice/${receiptId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ skillId }),
+  });
+  if (!r.ok) throw new Error('skill choice failed');
+  return r.json();
+}
+
 export const money = (n) =>
   (n < 0 ? '-$' : '$') + Math.abs(Math.round(n)).toLocaleString('en-US');

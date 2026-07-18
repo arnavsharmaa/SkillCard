@@ -3,6 +3,7 @@ import { runTask as runTaskStream, money } from '../api.js';
 import StageTimeline from '../components/StageTimeline.jsx';
 import ReceiptCard from '../components/ReceiptCard.jsx';
 import OperatorConsole from '../components/OperatorConsole.jsx';
+import ApprovalModal from '../components/ApprovalModal.jsx';
 import RobotAvatar from '../components/RobotAvatar.jsx';
 
 export default function LiveRun({ state, onComplete }) {
@@ -13,6 +14,7 @@ export default function LiveRun({ state, onComplete }) {
   const [running, setRunning] = useState(false);
   const [receipt, setReceipt] = useState(null);
   const [escalation, setEscalation] = useState(null); // { escalationId, task, robotName }
+  const [approval, setApproval] = useState(null); // flagged-purchase approval context
   const [notice, setNotice] = useState(null);
 
   const task = state.tasks.find((t) => t.id === selectedTask);
@@ -34,6 +36,7 @@ export default function LiveRun({ state, onComplete }) {
     setStages([]);
     setReceipt(null);
     setEscalation(null);
+    setApproval(null);
     setNotice(null);
     setRunning(true);
 
@@ -50,6 +53,7 @@ export default function LiveRun({ state, onComplete }) {
           if (d.needsOperator) {
             setEscalation({ escalationId: d.escalationId, task: d.task, robotName: d.robot?.name });
           }
+          if (d.needsApproval) setApproval(d.approval);
           onComplete?.(d);
         },
         onError: () => {
@@ -64,6 +68,15 @@ export default function LiveRun({ state, onComplete }) {
 
   const onOperatorResolved = (result) => {
     setReceipt(result.receipt);
+    onComplete?.(result);
+  };
+
+  // A flagged purchase was resolved (approved, or a different skill chosen):
+  // append the returned stages to the timeline and show the receipt.
+  const onApprovalResolved = (result) => {
+    setApproval(null);
+    if (result.stages) setStages((prev) => [...prev, ...result.stages]);
+    if (result.receipt) setReceipt(result.receipt);
     onComplete?.(result);
   };
 
@@ -169,6 +182,19 @@ export default function LiveRun({ state, onComplete }) {
         )}
 
         {stages.length > 0 && <StageTimeline stages={stages} live={running} />}
+
+        {approval && !receipt && (
+          <div className="mt-2 max-w-xl">
+            <ApprovalModal
+              approval={approval}
+              onResolved={onApprovalResolved}
+              onError={() => {
+                setApproval(null);
+                setNotice('That approval hit a snag — press Run Task to try again.');
+              }}
+            />
+          </div>
+        )}
 
         {escalation && !receipt && (
           <div className="mt-2 max-w-xl">
