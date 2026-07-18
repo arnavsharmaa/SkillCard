@@ -85,6 +85,7 @@ export function seedTasks() {
       taskValue: 480, // what completing it is worth to the business
       humanBaselineCost: 220, // what a person would charge to do it
       downtimeCost: 320, // est. cost if the robot just stops and waits (line stall)
+      blocker: "can't see it",
       difficulty: 'High',
     },
     {
@@ -94,6 +95,7 @@ export function seedTasks() {
       taskValue: 150,
       humanBaselineCost: 90,
       downtimeCost: 130,
+      blocker: "too dark to read",
       difficulty: 'Medium',
     },
     {
@@ -103,6 +105,7 @@ export function seedTasks() {
       taskValue: 900,
       humanBaselineCost: 650,
       downtimeCost: 820,
+      blocker: "can't see the cracks",
       difficulty: 'High',
     },
     {
@@ -112,6 +115,7 @@ export function seedTasks() {
       taskValue: 300,
       humanBaselineCost: 140,
       downtimeCost: 240,
+      blocker: "can't tell the material",
       difficulty: 'Medium',
     },
     {
@@ -121,6 +125,7 @@ export function seedTasks() {
       taskValue: 620,
       humanBaselineCost: 400,
       downtimeCost: 560,
+      blocker: "can't map the water",
       difficulty: 'High',
     },
   ];
