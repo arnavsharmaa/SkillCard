@@ -25,6 +25,11 @@ export default function LiveRun({ state, onComplete }) {
     if (running || receipt) bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, [stages.length, receipt, running]);
 
+  // Close any in-flight run stream when this view unmounts (e.g. Reset remounts
+  // it), so a stale run can't keep updating after a reset.
+  const cancelRef = useRef(null);
+  useEffect(() => () => cancelRef.current?.(), []);
+
   const run = () => {
     setStages([]);
     setReceipt(null);
@@ -32,7 +37,7 @@ export default function LiveRun({ state, onComplete }) {
     setNotice(null);
     setRunning(true);
 
-    runTaskStream(
+    cancelRef.current = runTaskStream(
       selectedTask,
       selectedRobot,
       {
