@@ -148,8 +148,8 @@ export default function LiveRun({ state, onComplete }) {
                 </div>
                 <div className="text-2xl text-muted">→</div>
                 <div className="flex flex-col items-center">
-                  <div className="h-14 w-9 rounded-md border-2 border-dashed border-muted/50 bg-muted/5" title="transparent obstacle" />
-                  <span className="mt-1 text-[10px] font-mono text-muted">can't see it</span>
+                  <div className="h-14 w-9 rounded-md border-2 border-dashed border-muted/50 bg-muted/5 grid place-items-center text-muted/60 text-lg" title="what the robot is stuck on">?</div>
+                  <span className="mt-1 text-[10px] font-mono text-muted">{task.blocker || 'missing a capability'}</span>
                 </div>
               </div>
               <div className="text-lg font-semibold">{robot.name} is ready</div>
