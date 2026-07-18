@@ -22,6 +22,7 @@ const state = {
   receipts: [],
   totalSaved: 0,
   pendingEscalations: {}, // escalationId -> { escalation, robotId }
+  generation: 0, // bumped on reset; a run started before a reset is discarded
 };
 
 // ---- Read endpoints -------------------------------------------------------
@@ -47,6 +48,7 @@ app.post('/api/reset', (_req, res) => {
   state.receipts = [];
   state.totalSaved = 0;
   state.pendingEscalations = {};
+  state.generation += 1; // any run started before now is now stale
   res.json({ ok: true });
 });
 
@@ -86,12 +88,23 @@ app.get('/api/run/:taskId', async (req, res) => {
 
   send('start', { task, robot: { id: robot.id, name: robot.name } });
 
+  // Snapshot the generation. If a Reset happens while this run is streaming, the
+  // generation changes and we discard this run's effects so it can't pollute the
+  // freshly-reset state (the cause of "budget still spent after reset").
+  const gen = state.generation;
+
   try {
     const result = await runTask(
       { task, robot, marketplace: state.marketplace, simulateFailure: req.query.fail === '1' },
       (stage) => send('stage', stage),
       Number(req.query.delay) || 900
     );
+
+    if (gen !== state.generation) {
+      // Superseded by a reset — drop everything, don't touch state.
+      send('done', { purchased: false, superseded: true, totalSaved: state.totalSaved });
+      return res.end();
+    }
 
     if (result.needsOperator) {
       // Park the escalation context so the operator console can finalize it.

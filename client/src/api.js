@@ -1,7 +1,7 @@
 // Thin client for the SkillCard server. SSE for the run stream, fetch for reads.
 
 export async function getState() {
-  const r = await fetch('/api/state');
+  const r = await fetch('/api/state', { cache: 'no-store' });
   return r.json();
 }
 
