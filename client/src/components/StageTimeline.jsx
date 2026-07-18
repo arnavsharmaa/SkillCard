@@ -96,29 +96,60 @@ function StageBody({ s }) {
         </div>
       );
 
-    case 'POLICY':
+    case 'POLICY': {
+      const hasBlock = s.blocked?.length > 0;
+      const resolved = s.decision !== 'block'; // a fallback (or clean pick) survived policy
+      const verdictChips = (
+        <div className="flex flex-wrap items-center gap-2">
+          {s.decision === 'approve' && <Chip tone="accent">AUTO-APPROVED</Chip>}
+          {s.decision === 'flag' && <Chip tone="warn">FLAGGED FOR APPROVAL</Chip>}
+          {s.reasons?.map((r, i) => (
+            <span key={i} className="text-xs text-muted">{r}</span>
+          ))}
+        </div>
+      );
       return (
-        <div className="space-y-2">
-          {s.blocked?.length > 0 && (
-            <div className="rounded-lg border border-danger/50 bg-danger/10 p-3 shake">
-              <div className="text-danger font-semibold text-sm mb-1">⛔ BLOCKED — {s.blocked[0].skill.name}</div>
+        <div className="space-y-3">
+          {hasBlock && (
+            <div className="blocked-card rounded-xl border-2 border-danger bg-danger/15 p-4">
+              <div className="text-[10px] font-bold uppercase tracking-[0.25em] text-danger/80 mb-1.5">
+                Policy violation
+              </div>
+              <div className="text-danger font-black text-lg sm:text-xl leading-tight mb-1.5">
+                ⛔ BLOCKED — {s.blocked[0].skill.name}
+              </div>
               {s.blocked[0].reasons.map((r, i) => (
-                <p key={i} className="text-xs text-danger/90">{r}</p>
+                <p key={i} className="text-sm font-medium text-danger/90">{r}</p>
               ))}
             </div>
           )}
-          <p className={`text-sm ${s.decision === 'approve' ? 'text-accent' : s.decision === 'warn' ? 'text-warn' : 'text-white/80'}`}>
-            {s.text}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {s.decision === 'approve' && <Chip tone="accent">AUTO-APPROVED</Chip>}
-            {s.decision === 'flag' && <Chip tone="warn">FLAGGED FOR APPROVAL</Chip>}
-            {s.reasons?.map((r, i) => (
-              <span key={i} className="text-xs text-muted">{r}</span>
-            ))}
-          </div>
+          {hasBlock && resolved ? (
+            <div
+              className={`fallback-resolve flex items-start gap-2.5 rounded-xl border p-3.5 ${
+                s.decision === 'flag' ? 'border-warn/50 bg-warn/10' : 'border-accent/50 bg-accent/10'
+              }`}
+            >
+              <span className={`mt-0.5 text-lg leading-none ${s.decision === 'flag' ? 'text-warn' : 'text-accent'}`}>↳</span>
+              <div className="space-y-2">
+                <p className={`text-[15px] font-medium ${s.decision === 'flag' ? 'text-warn' : 'text-accent'}`}>
+                  {s.text}
+                </p>
+                {verdictChips}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <p className={`text-sm ${
+                s.decision === 'approve' ? 'text-accent' : s.decision === 'flag' ? 'text-warn' : 'text-danger font-semibold'
+              }`}>
+                {s.text}
+              </p>
+              {verdictChips}
+            </div>
+          )}
         </div>
       );
+    }
 
     case 'PURCHASE':
       return (
