@@ -166,6 +166,30 @@ export async function runTask({ task, robot, marketplace, reasoningResult, diagn
     return { purchased: false };
   }
 
+  if (policy.decision === 'flag') {
+    // Over the auto-approve ceiling — pause and ask a human. The run stops here;
+    // the client shows an approval modal and resumes via /api/approve or
+    // /api/skill-choice (the model proposes, the human disposes).
+    return {
+      purchased: false,
+      needsApproval: true,
+      approval: {
+        receiptId,
+        taskId: task.id,
+        robotId: robot.id,
+        chosen: { id: chosen.id, name: chosen.name, vendor: chosen.vendor, price: chosen.price, pricingModel: chosen.pricingModel },
+        ceiling: robot.policy.autoApproveCeiling,
+        diagnosis: dg.data.diagnosis,
+        rejected: rs.data.rejected || [],
+        fallbackChain: fallbackChain.map((f) => ({ name: f.skill.name, reasons: f.reasons })),
+        candidates: candidates.map((c) => ({
+          id: c.id, name: c.name, vendor: c.vendor, price: c.price, pricingModel: c.pricingModel,
+          successRate: c.successRate, category: c.category, policyBadge: applyPolicy(c, robot).decision,
+        })),
+      },
+    };
+  }
+
   // 6. PURCHASE -----------------------------------------------------------
   robot.spent += chosen.price;
   robot.monthlyBudget; // (budget is the ceiling; remaining derived on read)
@@ -241,6 +265,71 @@ export async function runTask({ task, robot, marketplace, reasoningResult, diagn
   emit({ stage: 'RECEIPT', status: 'ok', title: 'Receipt emitted', text: 'Purchase justified and logged.', receipt });
 
   return { purchased: true, receipt, netSaved };
+}
+
+// Finalize a purchase after a human decision (approve the flagged skill, or
+// pick a different one from the marketplace). Deterministic — no model involved.
+// approvedBy: 'human' (approved the over-ceiling pick) | 'operator' (chose a
+// different skill). Returns the stages to append plus the receipt.
+export function finalizePurchase(task, robot, chosen, ctx) {
+  const { receiptId, diagnosis, rejected = [], fallbackChain = [], approvedBy } = ctx;
+  robot.spent += chosen.price;
+  if (!robot.capabilities.includes(task.requiredCapability)) robot.capabilities.push(task.requiredCapability);
+  robot.history.push({ label: chosen.name, amount: chosen.price, ts: '2026-07-18', approvedBy });
+  robot.tasksCompleted += 1;
+  const netSaved = task.humanBaselineCost - chosen.price;
+  const policyDecision = approvedBy === 'operator' ? 'operator-chosen' : 'human-approved';
+  const receipt = {
+    id: receiptId,
+    ts: '2026-07-18',
+    robot: { id: robot.id, name: robot.name },
+    task: { id: task.id, description: task.description },
+    diagnosis,
+    skill: { id: chosen.id, name: chosen.name, vendor: chosen.vendor, price: chosen.price, pricingModel: chosen.pricingModel },
+    alternatives: rejected,
+    blocked: fallbackChain,
+    taskValue: task.taskValue,
+    humanBaseline: task.humanBaselineCost,
+    downtimeAvoided: task.downtimeCost || 0,
+    category: chosen.category,
+    policyDecision,
+    approvedBy,
+    outcome: 'success',
+    cost: chosen.price,
+    netSaved,
+  };
+  const stages = [];
+  if (approvedBy === 'operator') {
+    stages.push({
+      stage: 'POLICY',
+      status: 'ok',
+      title: 'Operator overrides the agent',
+      decision: 'operator',
+      chosen_skill: chosen,
+      text: `Operator chose ${chosen.name} from the marketplace.`,
+    });
+  }
+  stages.push({
+    stage: 'PURCHASE',
+    status: 'ok',
+    title: 'Purchase executed on virtual card',
+    text:
+      approvedBy === 'operator'
+        ? `Operator-selected ${chosen.name} — charged $${chosen.price} to ${robot.name}'s card.`
+        : `Human-approved — charged $${chosen.price} to ${robot.name}'s card (over the $${robot.policy.autoApproveCeiling} ceiling).`,
+    amount: chosen.price,
+    spent: robot.spent,
+    remaining: robot.monthlyBudget - robot.spent,
+    approvedBy,
+  });
+  stages.push({
+    stage: 'RETRY',
+    status: 'ok',
+    title: 'Robot retries the task',
+    text: `${robot.name} retried "${task.description}" with ${chosen.name} and succeeded.`,
+  });
+  stages.push({ stage: 'RECEIPT', status: 'ok', title: 'Receipt emitted', text: 'Purchase justified and logged.', receipt });
+  return { receipt, netSaved, stages };
 }
 
 // Called by the operator console (POST /api/operator) to finalize an escalated

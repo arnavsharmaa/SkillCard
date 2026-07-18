@@ -5,7 +5,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { seedRobots, seedTasks, seedMarketplace } from './seed.js';
-import { runTask, resolveWithOperator } from './loop.js';
+import { runTask, resolveWithOperator, finalizePurchase } from './loop.js';
 import { MODEL } from './openai.js';
 
 const app = express();
@@ -22,6 +22,7 @@ const state = {
   receipts: [],
   totalSaved: 0,
   pendingEscalations: {}, // escalationId -> { escalation, robotId }
+  pendingApprovals: {}, // receiptId -> approval context awaiting a human decision
   generation: 0, // bumped on reset; a run started before a reset is discarded
 };
 
@@ -48,8 +49,42 @@ app.post('/api/reset', (_req, res) => {
   state.receipts = [];
   state.totalSaved = 0;
   state.pendingEscalations = {};
+  state.pendingApprovals = {};
   state.generation += 1; // any run started before now is now stale
   res.json({ ok: true });
+});
+
+// ---- Human decisions on a flagged (over-ceiling) purchase -----------------
+function applyFinalize(res, receiptId, chosenId, approvedBy) {
+  const pending = state.pendingApprovals[receiptId];
+  if (!pending) return res.status(404).json({ error: 'No pending approval.' });
+  const robot = state.robots.find((r) => r.id === pending.robotId);
+  const task = state.tasks.find((t) => t.id === pending.taskId);
+  const chosen = state.marketplace.find((s) => s.id === chosenId);
+  if (!robot || !task || !chosen) return res.status(400).json({ error: 'Bad approval context.' });
+  const { receipt, netSaved, stages } = finalizePurchase(task, robot, chosen, {
+    receiptId,
+    diagnosis: pending.diagnosis,
+    rejected: pending.rejected,
+    fallbackChain: pending.fallbackChain,
+    approvedBy,
+  });
+  state.receipts.unshift(receipt);
+  state.totalSaved += netSaved;
+  delete state.pendingApprovals[receiptId];
+  res.json({ receipt, netSaved, stages, totalSaved: state.totalSaved, robot });
+}
+
+// Approve the flagged (over-ceiling) skill as-is.
+app.post('/api/approve/:receiptId', (req, res) => {
+  const pending = state.pendingApprovals[req.params.receiptId];
+  if (!pending) return res.status(404).json({ error: 'No pending approval.' });
+  applyFinalize(res, req.params.receiptId, pending.chosen.id, 'human');
+});
+
+// Human picks a different skill from the marketplace instead.
+app.post('/api/skill-choice/:receiptId', (req, res) => {
+  applyFinalize(res, req.params.receiptId, req.body.skillId, 'operator');
 });
 
 // ---- Operator console finalizes an escalated task -------------------------
@@ -103,6 +138,18 @@ app.get('/api/run/:taskId', async (req, res) => {
     if (gen !== state.generation) {
       // Superseded by a reset — drop everything, don't touch state.
       send('done', { purchased: false, superseded: true, totalSaved: state.totalSaved });
+      return res.end();
+    }
+
+    if (result.needsApproval) {
+      // Park the approval context; the client shows an approve/choose modal.
+      const a = result.approval;
+      state.pendingApprovals[a.receiptId] = a;
+      send('done', {
+        purchased: false,
+        needsApproval: true,
+        approval: a,
+      });
       return res.end();
     }
 

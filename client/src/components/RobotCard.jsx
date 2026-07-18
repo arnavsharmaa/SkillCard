@@ -78,14 +78,20 @@ export default function RobotCard({ robot }) {
                     isLast ? 'bg-accent spark-glow' : 'bg-accentDim/70 group-hover:bg-accent'
                   }`}
                   style={{ height: `${Math.max(8, (h.amount / max) * 100)}%`, animationDelay: `${i * 50}ms` }}
-                  title={`${h.label}: ${money(h.amount)}`}
+                  title={`${h.label}: ${money(h.amount)}${h.approvedBy ? ` (${h.approvedBy}-approved)` : ''}`}
                 />
               </div>
             );
           })}
         </div>
-        <div className="text-[10px] font-mono text-muted mt-1.5 truncate">
-          latest: <span className="text-accent">{robot.history[robot.history.length - 1]?.label}</span>
+        <div className="text-[10px] font-mono text-muted mt-1.5 truncate flex items-center gap-1.5">
+          <span className="truncate">latest: <span className="text-accent">{robot.history[robot.history.length - 1]?.label}</span></span>
+          {robot.history[robot.history.length - 1]?.approvedBy === 'human' && (
+            <span className="shrink-0 rounded border border-warn/40 bg-warn/10 px-1 text-warn">⚑ approved</span>
+          )}
+          {robot.history[robot.history.length - 1]?.approvedBy === 'operator' && (
+            <span className="shrink-0 rounded border border-edge bg-panel2 px-1 text-muted">operator pick</span>
+          )}
         </div>
       </div>
     </div>
