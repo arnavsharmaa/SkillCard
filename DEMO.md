@@ -23,10 +23,11 @@ I press one button."*
 |-------|-----------|-----|
 | **ATTEMPT** | the red telemetry | *"It tried to grab a glass beaker and failed — the depth camera can't see transparent objects."* |
 | **DIAGNOSE** | the plain-English text | *"The agent explains the failure in plain language — a sensing gap, not a motion problem. That's a live model call."* |
-| **SHOP → REASON** | the rejection list | *"It shops a marketplace of buyable skills and reasons about the economics — expected value against the $480 the task is worth. Look, it justifies rejecting every alternative."* |
-| **POLICY (red block)** | the loud red BLOCKED card | ⭐ *"Its best pick was a human teleoperator — but company policy blocks human teleop for autonomous units. The model proposes, policy disposes. Watch it fall back."* |
-| **PURCHASE → RETRY** | the green success | *"It buys the compliant option for $42, installs the capability, retries — and succeeds."* |
-| **RECEIPT** | the receipt card | *"And it emits a receipt you could staple to an expense report: what broke, what it bought, what it rejected and why, and what it saved."* |
+| **SHOP** | the red **BLOCKED** badges | *"It shops a marketplace — and every option gets a policy badge. See the $8 skill from an unverified vendor demanding unrestricted camera and motion access? Hard-blocked on security. That's the malicious-skill defense."* |
+| **REASON** | the rejection list | *"It reasons on the economics — expected value against the $480 the task is worth — and justifies rejecting every alternative."* |
+| **POLICY (red block)** | the loud red BLOCKED card | ⭐ *"Its best economic pick was a human teleoperator — but policy blocks human teleop for autonomous units. The model proposes, policy disposes. Watch it fall back."* |
+| **PURCHASE → RETRY** | the green success | *"It buys the compliant option for $42 under delegated authority, installs the capability, retries — and succeeds."* |
+| **RECEIPT** | the receipt card | *"And it emits a receipt you could staple to an expense report: what broke, what it bought, what it rejected and why, what it saved, and the downtime it avoided."* |
 
 ## The number to point at
 
@@ -36,11 +37,23 @@ I press one button."*
 $42 and did it itself. **$178 saved on one task** — and every dollar is auditable. This
 is spend infrastructure for machines that can act on their own."*
 
-## If they want more (the extra 20 seconds)
-- **Receipts tab:** *"Every run files a receipt like this — diagnosis, alternatives
-  considered, net saved, accounting category. Finance can audit an autonomous agent."*
-- **Fleet tab:** *"Three robots, three budgets, three policies. Notice Atlas-7 now has
-  the transparent-object-grasp capability it just bought, and its card is down $42."*
+## The second act — human escalation (optional, ~20 seconds)
+
+If they lean in, show what happens when the bought skill *doesn't* work:
+
+1. Press **↺ Reset demo**, tick **Simulate skill failure**, keep task-01 / Atlas-7, press **▶ Run Task**.
+2. Same loop — but at **RETRY** the skill fails (red ✕) and the robot **escalates to an approved human operator**.
+3. An **Operator Console** appears. **Say:** *"When autonomy isn't enough, it escalates — to an approved operator vendor, not an anonymous gig worker. Time-boxed, every action recorded."*
+4. Click **Take control & resolve**. **Say:** *"The operator resolves it, and access is revoked the moment the task ends."*
+5. **Point at the receipt:** *"Look — it shows the full trail: the $42 skill that failed, the $55 operator that fixed it, and it's STILL $123 cheaper than a human doing it from scratch. It doesn't hide the failure — it accounts for it."*
+
+> This is single-laptop by design — no second device to fail at the table.
+
+## If they want more
+- **Receipts tab:** *"Every run files a receipt — diagnosis, alternatives considered, net
+  saved, downtime avoided, accounting category. Finance can audit an autonomous agent."*
+- **Fleet tab:** *"Three robots, three budgets, three policies. Atlas-7 now has the
+  transparent-object-grasp capability it just bought, and its card is down."*
 
 ## Recovery (it won't happen, but)
 - Nothing renders? Press **↺ Reset demo**, then **▶ Run Task** again.

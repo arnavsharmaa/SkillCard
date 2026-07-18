@@ -11,8 +11,8 @@ export async function reset() {
 
 // Runs a task and invokes handlers as stages stream in.
 // Returns a cancel function. Uses EventSource for reliable SSE.
-export function runTask(taskId, robotId, { onStart, onStage, onDone, onError }, delay = 900) {
-  const url = `/api/run/${taskId}?robotId=${robotId}&delay=${delay}`;
+export function runTask(taskId, robotId, { onStart, onStage, onDone, onError }, delay = 900, fail = false) {
+  const url = `/api/run/${taskId}?robotId=${robotId}&delay=${delay}${fail ? '&fail=1' : ''}`;
   const es = new EventSource(url);
 
   es.addEventListener('start', (e) => onStart?.(JSON.parse(e.data)));
@@ -34,6 +34,13 @@ export function runTask(taskId, robotId, { onStart, onStage, onDone, onError }, 
   });
 
   return () => es.close();
+}
+
+// Finalize an escalated task after a human operator resolves it.
+export async function resolveWithOperator(escalationId) {
+  const r = await fetch(`/api/operator/${escalationId}`, { method: 'POST' });
+  if (!r.ok) throw new Error('operator finalize failed');
+  return r.json();
 }
 
 export const money = (n) =>

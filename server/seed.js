@@ -23,6 +23,8 @@ export function seedRobots() {
         autoApproveCeiling: 50, // per-transaction auto-approve ceiling in USD
         blockedCategories: ['teleop'], // fully autonomous unit — no human teleop allowed
         requiredCertifications: ['SOC2'],
+        requireVerifiedVendor: true, // block skills from unverified vendors
+        blockUnrestrictedPermissions: true, // block skills asking for unrestricted access
       },
       capabilities: ['navigation', 'object-detection', 'path-planning'],
       history: [
@@ -41,6 +43,8 @@ export function seedRobots() {
         autoApproveCeiling: 120,
         blockedCategories: [],
         requiredCertifications: [],
+        requireVerifiedVendor: true,
+        blockUnrestrictedPermissions: true,
       },
       capabilities: ['navigation', 'thermal-imaging'],
       history: [{ label: 'Thermal Anomaly Detect', amount: 180, ts: '2026-07-05' }],
@@ -56,6 +60,8 @@ export function seedRobots() {
         autoApproveCeiling: 75,
         blockedCategories: [],
         requiredCertifications: ['SOC2'],
+        requireVerifiedVendor: true,
+        blockUnrestrictedPermissions: true,
       },
       capabilities: ['object-detection', 'precision-grasp'],
       history: [{ label: 'Bin Pick Vision', amount: 95, ts: '2026-07-11' }],
@@ -75,6 +81,7 @@ export function seedTasks() {
       requiredCapability: 'transparent-object-grasp',
       taskValue: 480, // what completing it is worth to the business
       humanBaselineCost: 220, // what a person would charge to do it
+      downtimeCost: 320, // est. cost if the robot just stops and waits (line stall)
       difficulty: 'High',
     },
     {
@@ -83,6 +90,7 @@ export function seedTasks() {
       requiredCapability: 'ocr-lowlight',
       taskValue: 150,
       humanBaselineCost: 90,
+      downtimeCost: 130,
       difficulty: 'Medium',
     },
     {
@@ -91,6 +99,7 @@ export function seedTasks() {
       requiredCapability: 'weld-inspection',
       taskValue: 900,
       humanBaselineCost: 650,
+      downtimeCost: 820,
       difficulty: 'High',
     },
     {
@@ -99,6 +108,7 @@ export function seedTasks() {
       requiredCapability: 'material-classification',
       taskValue: 300,
       humanBaselineCost: 140,
+      downtimeCost: 240,
       difficulty: 'Medium',
     },
     {
@@ -107,6 +117,7 @@ export function seedTasks() {
       requiredCapability: 'flood-navigation',
       taskValue: 620,
       humanBaselineCost: 400,
+      downtimeCost: 560,
       difficulty: 'High',
     },
   ];
@@ -166,6 +177,23 @@ export function seedMarketplace() {
       requiredHardware: [],
       certifications: ['SOC2'],
       category: 'manipulation',
+    },
+    {
+      // Deliberately dangerous option: cheap, unverified vendor, demands
+      // unrestricted access. The security policy hard-blocks it.
+      id: 'skl-17',
+      name: 'Universal Manipulation Beta',
+      vendor: 'anon-dev-labs',
+      price: 8,
+      pricingModel: 'per execution',
+      capability: 'transparent-object-grasp',
+      successRate: 0.6,
+      requiredHardware: [],
+      certifications: [],
+      category: 'manipulation',
+      vendorVerified: false,
+      riskLevel: 'high',
+      requestedPermissions: ['camera:unrestricted', 'motion:unrestricted'],
     },
     // --- ocr-lowlight ---
     {

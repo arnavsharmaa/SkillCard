@@ -9,6 +9,7 @@ const STAGE_META = {
   POLICY: { n: 5, label: 'Policy' },
   PURCHASE: { n: 6, label: 'Purchase' },
   RETRY: { n: 7, label: 'Retry' },
+  ESCALATE: { n: '↑', label: 'Escalate' },
   RECEIPT: { n: 8, label: 'Receipt' },
 };
 
@@ -65,12 +66,28 @@ function StageBody({ s }) {
       return (
         <div className="space-y-2">
           <p className="text-sm text-white/80">{s.text}</p>
-          <div className="flex flex-wrap gap-2">
-            {s.candidates.map((c) => (
-              <span key={c.id} className="rounded border border-edge bg-panel2 px-2 py-1 text-[11px] font-mono">
-                {c.name} <span className="text-muted">· ${c.price} · {Math.round(c.successRate * 100)}%</span>
-              </span>
-            ))}
+          <div className="space-y-1.5">
+            {s.candidates.map((c) => {
+              const badge =
+                c.policyBadge === 'block'
+                  ? { tone: 'danger', label: 'BLOCKED' }
+                  : c.policyBadge === 'flag'
+                  ? { tone: 'warn', label: 'NEEDS APPROVAL' }
+                  : { tone: 'accent', label: 'COMPATIBLE' };
+              return (
+                <div
+                  key={c.id}
+                  className={`flex items-center justify-between rounded border px-2.5 py-1.5 text-[12px] font-mono ${
+                    c.policyBadge === 'block' ? 'border-danger/40 bg-danger/5' : 'border-edge bg-panel2'
+                  }`}
+                >
+                  <span className="truncate">
+                    {c.name} <span className="text-muted">· ${c.price} · {Math.round(c.successRate * 100)}%</span>
+                  </span>
+                  <Chip tone={badge.tone}>{badge.label}</Chip>
+                </div>
+              );
+            })}
           </div>
         </div>
       );
@@ -135,8 +152,18 @@ function StageBody({ s }) {
     case 'RETRY':
       return (
         <div className="flex items-center gap-2">
-          <span className="text-accent text-lg">✓</span>
+          <span className={`text-lg ${s.status === 'fail' ? 'text-danger' : 'text-accent'}`}>
+            {s.status === 'fail' ? '✕' : '✓'}
+          </span>
           <p className="text-sm text-white">{s.text}</p>
+        </div>
+      );
+
+    case 'ESCALATE':
+      return (
+        <div className="rounded-lg border border-warn/50 bg-warn/10 p-3">
+          <div className="text-warn font-semibold text-sm mb-1">↑ Escalating to a human operator</div>
+          <p className="text-xs text-warn/90 leading-relaxed">{s.text}</p>
         </div>
       );
 

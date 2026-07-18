@@ -20,6 +20,15 @@ export function applyPolicy(skill, robot) {
   if (missingHw.length > 0) {
     return { decision: 'block', reasons: [`Requires hardware not installed: ${missingHw.join(', ')}.`] };
   }
+  // Hard block: unverified vendor (skills default to verified unless flagged).
+  if (p.requireVerifiedVendor && skill.vendorVerified === false) {
+    return { decision: 'block', reasons: [`Unverified vendor "${skill.vendor}" — blocked by security policy.`] };
+  }
+  // Hard block: skill demands unrestricted permissions.
+  const unrestricted = (skill.requestedPermissions || []).filter((perm) => perm.includes('unrestricted'));
+  if (p.blockUnrestrictedPermissions && unrestricted.length > 0) {
+    return { decision: 'block', reasons: [`Requests unrestricted access (${unrestricted.join(', ')}) — blocked by security policy.`] };
+  }
   // Hard block: missing a required certification.
   const missingCert = (p.requiredCertifications || []).filter((c) => !(skill.certifications || []).includes(c));
   if (missingCert.length > 0) {
@@ -41,7 +50,7 @@ function rankCandidates(candidates, task) {
 }
 
 // emit(stage) is called for every stage; delayMs paces the visual timeline.
-export async function runTask({ task, robot, marketplace, reasoningResult, diagnosisResult }, emit, delayMs = 900) {
+export async function runTask({ task, robot, marketplace, reasoningResult, diagnosisResult, simulateFailure }, emit, delayMs = 900) {
   const receiptId = `rcpt-${Date.now().toString(36)}`;
 
   // 1. ATTEMPT ------------------------------------------------------------
@@ -72,7 +81,14 @@ export async function runTask({ task, robot, marketplace, reasoningResult, diagn
   const candidates = rankCandidates(
     marketplace.filter((s) => s.capability === task.requiredCapability),
     task
-  ).slice(0, 4);
+  )
+    .slice(0, 4)
+    // Pre-screen every candidate against policy so the marketplace shows a
+    // compatible / needs-approval / blocked badge on each option.
+    .map((c) => {
+      const pol = applyPolicy(c, robot);
+      return { ...c, policyBadge: pol.decision, policyNote: pol.reasons[0] };
+    });
   emit({
     stage: 'SHOP',
     status: 'ok',
@@ -166,7 +182,48 @@ export async function runTask({ task, robot, marketplace, reasoningResult, diagn
   });
   await sleep(delayMs);
 
+  // Shared receipt fields (used by both the success and escalation paths).
+  const receiptBase = {
+    id: receiptId,
+    ts: '2026-07-18',
+    robot: { id: robot.id, name: robot.name },
+    task: { id: task.id, description: task.description },
+    diagnosis: dg.data.diagnosis,
+    skill: { id: chosen.id, name: chosen.name, vendor: chosen.vendor, price: chosen.price, pricingModel: chosen.pricingModel },
+    alternatives: rs.data.rejected || [],
+    blocked: fallbackChain.map((f) => ({ name: f.skill.name, reasons: f.reasons })),
+    taskValue: task.taskValue,
+    humanBaseline: task.humanBaselineCost,
+    downtimeAvoided: task.downtimeCost || 0,
+    category: chosen.category,
+    policyDecision: policy.decision,
+  };
+
   // 7. RETRY --------------------------------------------------------------
+  if (simulateFailure) {
+    // The purchased skill underperformed in the physical world. Escalate to an
+    // approved human operator — governed, time-boxed, fully logged.
+    emit({
+      stage: 'RETRY',
+      status: 'fail',
+      title: 'Robot retries the task',
+      text: `${robot.name} retried with ${chosen.name} but the grasp failed — real-world confidence stayed below threshold.`,
+    });
+    await sleep(delayMs);
+    emit({
+      stage: 'ESCALATE',
+      status: 'warn',
+      title: 'Escalating to an approved human operator',
+      text: `${chosen.name} underperformed. Requesting a time-boxed session from an approved operator vendor. All actions will be recorded and access revoked when the task ends.`,
+    });
+    // Hand back the context so the operator console can finalize the receipt.
+    return {
+      purchased: true,
+      needsOperator: true,
+      escalation: { receiptBase, skillCost: chosen.price, robotId: robot.id },
+    };
+  }
+
   emit({
     stage: 'RETRY',
     status: 'ok',
@@ -178,24 +235,29 @@ export async function runTask({ task, robot, marketplace, reasoningResult, diagn
 
   // 8. RECEIPT ------------------------------------------------------------
   const netSaved = task.humanBaselineCost - chosen.price;
-  const receipt = {
-    id: receiptId,
-    ts: '2026-07-18',
-    robot: { id: robot.id, name: robot.name },
-    task: { id: task.id, description: task.description },
-    diagnosis: dg.data.diagnosis,
-    skill: { id: chosen.id, name: chosen.name, vendor: chosen.vendor, price: chosen.price, pricingModel: chosen.pricingModel },
-    alternatives: rs.data.rejected || [],
-    blocked: fallbackChain.map((f) => ({ name: f.skill.name, reasons: f.reasons })),
-    outcome: 'success',
-    taskValue: task.taskValue,
-    humanBaseline: task.humanBaselineCost,
-    cost: chosen.price,
-    netSaved,
-    category: chosen.category,
-    policyDecision: policy.decision,
-  };
+  const receipt = { ...receiptBase, outcome: 'success', cost: chosen.price, netSaved };
   emit({ stage: 'RECEIPT', status: 'ok', title: 'Receipt emitted', text: 'Purchase justified and logged.', receipt });
 
   return { purchased: true, receipt, netSaved };
+}
+
+// Called by the operator console (POST /api/operator) to finalize an escalated
+// task after a human resolves it. Deterministic — no model involved.
+export function resolveWithOperator(escalation, robot, operatorCost = 55) {
+  const { receiptBase, skillCost } = escalation;
+  const totalCost = skillCost + operatorCost;
+  robot.spent += operatorCost;
+  robot.history.push({ label: 'Human Operator (escalation)', amount: operatorCost, ts: '2026-07-18' });
+  robot.tasksCompleted += 1;
+  const netSaved = receiptBase.humanBaseline - totalCost;
+  const receipt = {
+    ...receiptBase,
+    outcome: 'resolved by operator',
+    operator: { vendor: 'RemoteAssist (approved)', cost: operatorCost, accessRevoked: true },
+    cost: totalCost,
+    skillCost,
+    operatorCost,
+    netSaved,
+  };
+  return { receipt, netSaved };
 }
