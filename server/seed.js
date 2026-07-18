@@ -17,6 +17,7 @@ export function seedRobots() {
       id: 'rbt-01',
       name: 'Atlas-7',
       model: 'Boston Dynamics Atlas (sim)',
+      type: 'humanoid',
       monthlyBudget: 2000,
       spent: 340,
       policy: {
@@ -37,6 +38,7 @@ export function seedRobots() {
       id: 'rbt-02',
       name: 'Spot-Delta',
       model: 'Quadruped Inspector (sim)',
+      type: 'quadruped',
       monthlyBudget: 1200,
       spent: 180,
       policy: {
@@ -54,6 +56,7 @@ export function seedRobots() {
       id: 'rbt-03',
       name: 'Arm-Nova',
       model: 'Fixed-Base 6DOF Arm (sim)',
+      type: 'arm',
       monthlyBudget: 800,
       spent: 95,
       policy: {
@@ -77,7 +80,7 @@ export function seedTasks() {
   return [
     {
       id: 'task-01',
-      description: 'Pick a transparent glass beaker from a cluttered lab bench and place it in the rack',
+      description: "A clear plastic water bottle is blocking the robot's path — it must detect and move it aside, but its depth camera can't see the transparent bottle",
       requiredCapability: 'transparent-object-grasp',
       taskValue: 480, // what completing it is worth to the business
       humanBaselineCost: 220, // what a person would charge to do it

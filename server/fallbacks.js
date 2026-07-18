@@ -5,7 +5,7 @@
 export const CANNED_DIAGNOSIS = {
   'task-01': {
     diagnosis:
-      "The gripper closed on empty space three times — the depth camera reads the transparent beaker as background, so the robot never sees an object to grasp. This is a sensing gap, not a motion-planning failure.",
+      "The robot drove straight at the bottle and stalled — its depth camera reads the clear plastic as empty floor, so it never registers an obstacle to move. This is a sensing gap, not a motion-planning failure.",
     missing_capability: 'transparent-object-grasp',
     confidence: 0.93,
   },
