@@ -1,5 +1,6 @@
 import React from 'react';
 import { money } from '../api.js';
+import RobotAvatar from './RobotAvatar.jsx';
 
 export default function RobotCard({ robot }) {
   const remaining = robot.monthlyBudget - robot.spent;
@@ -8,13 +9,13 @@ export default function RobotCard({ robot }) {
 
   return (
     <div className="rounded-2xl border border-edge bg-panel p-5 space-y-4">
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="text-lg font-semibold">{robot.name}</div>
-          <div className="text-xs text-muted">{robot.model}</div>
+      <div className="flex items-center gap-3">
+        <div className="h-12 w-12 rounded-xl bg-accent/10 text-accent grid place-items-center shrink-0">
+          <RobotAvatar type={robot.type} size={34} />
         </div>
-        <div className="h-9 w-9 rounded-lg bg-accent/15 text-accent grid place-items-center font-mono text-xs">
-          {robot.id.slice(-2)}
+        <div className="min-w-0">
+          <div className="text-lg font-semibold truncate">{robot.name}</div>
+          <div className="text-xs text-muted truncate">{robot.model}</div>
         </div>
       </div>
 

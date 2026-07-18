@@ -5,7 +5,7 @@ A stranger walks up to the table. You have their attention for 60 seconds. Here'
 ## Before they arrive (do this once)
 1. `npm run dev` is running. Browser open at **http://localhost:5173**.
 2. Click **↺ Reset demo** so the big counter reads **$0**.
-3. Leave it on the **Live Run** tab with **task-01** ("Pick a transparent glass beaker…")
+3. Leave it on the **Live Run** tab with **task-01** ("A clear plastic water bottle is blocking the robot's path…")
    and robot **Atlas-7** selected. Both are the defaults — don't touch anything else.
 
 > The demo is deterministic. task-01 on Atlas-7 **always** triggers the policy block and
@@ -21,7 +21,7 @@ I press one button."*
 
 | Stage | Point at… | Say |
 |-------|-----------|-----|
-| **ATTEMPT** | the red telemetry | *"It tried to grab a glass beaker and failed — the depth camera can't see transparent objects."* |
+| **ATTEMPT** | the red telemetry | *"A clear water bottle is blocking its path — but the depth camera reads transparent plastic as empty floor, so it stalls."* |
 | **DIAGNOSE** | the plain-English text | *"The agent explains the failure in plain language — a sensing gap, not a motion problem. That's a live model call."* |
 | **SHOP** | the red **BLOCKED** badges | *"It shops a marketplace — and every option gets a policy badge. See the $8 skill from an unverified vendor demanding unrestricted camera and motion access? Hard-blocked on security. That's the malicious-skill defense."* |
 | **REASON** | the rejection list | *"It reasons on the economics — expected value against the $480 the task is worth — and justifies rejecting every alternative."* |

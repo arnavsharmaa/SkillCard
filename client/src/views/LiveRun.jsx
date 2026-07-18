@@ -3,6 +3,7 @@ import { runTask as runTaskStream, money } from '../api.js';
 import StageTimeline from '../components/StageTimeline.jsx';
 import ReceiptCard from '../components/ReceiptCard.jsx';
 import OperatorConsole from '../components/OperatorConsole.jsx';
+import RobotAvatar from '../components/RobotAvatar.jsx';
 
 export default function LiveRun({ state, onComplete }) {
   const [selectedTask, setSelectedTask] = useState('task-01');
@@ -95,10 +96,11 @@ export default function LiveRun({ state, onComplete }) {
                 key={r.id}
                 disabled={running}
                 onClick={() => setSelectedRobot(r.id)}
-                className={`rounded-lg border px-2 py-2 text-xs font-mono transition-colors ${
-                  selectedRobot === r.id ? 'border-accent bg-accent/5 text-accent' : 'border-edge bg-panel2 text-muted'
+                className={`flex flex-col items-center gap-1 rounded-lg border px-2 py-2.5 text-xs font-mono transition-colors ${
+                  selectedRobot === r.id ? 'border-accent bg-accent/5 text-accent' : 'border-edge bg-panel2 text-muted hover:border-muted/40'
                 }`}
               >
+                <RobotAvatar type={r.type} size={30} className={selectedRobot === r.id ? 'text-accent' : 'text-muted'} />
                 {r.name}
               </button>
             ))}
