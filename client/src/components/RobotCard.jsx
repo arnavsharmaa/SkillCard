@@ -24,10 +24,18 @@ export default function RobotCard({ robot }) {
           <span className="text-muted">spent {money(robot.spent)}</span>
           <span className="text-accent">{money(remaining)} left</span>
         </div>
-        <div className="h-2 rounded-full bg-panel2 overflow-hidden">
-          <div className="h-full bg-accent rounded-full transition-all" style={{ width: `${pct}%` }} />
+        <div className="h-2.5 rounded-full bg-panel2 overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-700 ${
+              pct >= 90 ? 'bg-danger' : pct >= 70 ? 'bg-warn' : 'bg-accent'
+            }`}
+            style={{ width: `${pct}%` }}
+          />
         </div>
-        <div className="text-[10px] text-muted mt-1 font-mono">budget {money(robot.monthlyBudget)} / mo</div>
+        <div className="flex justify-between text-[10px] text-muted mt-1 font-mono">
+          <span>budget {money(robot.monthlyBudget)} / mo</span>
+          <span>{pct}% used</span>
+        </div>
       </div>
 
       {/* capabilities */}
@@ -58,22 +66,25 @@ export default function RobotCard({ robot }) {
             {robot.tasksCompleted} tasks · {money(costPerTask)}/task
           </div>
         </div>
-        <div className="flex items-end gap-1.5 h-12">
+        <div className="flex items-end gap-1.5 h-14 border-b border-edge">
           {robot.history.map((h, i) => {
             const max = Math.max(...robot.history.map((x) => x.amount), 1);
+            const isLast = i === robot.history.length - 1;
             return (
-              <div key={i} className="flex-1 group relative">
+              <div key={i} className="flex-1 max-w-12 group relative flex items-end h-full">
                 <div
-                  className="w-full rounded-t bg-accentDim group-hover:bg-accent transition-colors"
-                  style={{ height: `${Math.max(8, (h.amount / max) * 100)}%` }}
+                  className={`grow-up w-full rounded-t transition-colors ${
+                    isLast ? 'bg-accent spark-glow' : 'bg-accentDim/70 group-hover:bg-accent'
+                  }`}
+                  style={{ height: `${Math.max(8, (h.amount / max) * 100)}%`, animationDelay: `${i * 50}ms` }}
                   title={`${h.label}: ${money(h.amount)}`}
                 />
               </div>
             );
           })}
         </div>
-        <div className="text-[10px] font-mono text-muted mt-1 truncate">
-          latest: {robot.history[robot.history.length - 1]?.label}
+        <div className="text-[10px] font-mono text-muted mt-1.5 truncate">
+          latest: <span className="text-accent">{robot.history[robot.history.length - 1]?.label}</span>
         </div>
       </div>
     </div>
