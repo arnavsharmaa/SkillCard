@@ -136,6 +136,60 @@ body {
 }
 .shake { animation: shake 0.4s ease-in-out; }
 
+/* Receipt: perforated tear-off bottom edge (sawtooth in panel color) */
+.receipt-tear {
+  height: 10px;
+  background: conic-gradient(from 135deg at 50% 0, #121419 90deg, transparent 0) 0 0 / 14px 100% repeat-x;
+}
+
+/* Receipt: rotated PAID stamp */
+.receipt-stamp {
+  position: absolute;
+  right: 1.5rem;
+  top: 4.5rem;
+  z-index: 10;
+  transform: rotate(-12deg);
+  border: 2px solid rgba(55, 230, 164, 0.7);
+  border-radius: 6px;
+  padding: 2px 12px;
+  color: rgba(55, 230, 164, 0.9);
+  font-size: 15px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  box-shadow: inset 0 0 14px rgba(55, 230, 164, 0.15);
+  pointer-events: none;
+}
+@keyframes stampIn {
+  0% { opacity: 0; transform: rotate(-12deg) scale(2.2); }
+  60% { opacity: 1; transform: rotate(-12deg) scale(0.94); }
+  100% { opacity: 1; transform: rotate(-12deg) scale(1); }
+}
+.stamp-in { animation: stampIn 0.4s cubic-bezier(0.2, 0.7, 0.2, 1.2) 0.7s both; }
+
+/* Receipt: fake barcode footer */
+.barcode {
+  color: #cfd6e1;
+  background: repeating-linear-gradient(
+    90deg,
+    currentColor 0 2px, transparent 2px 5px,
+    currentColor 5px 6px, transparent 6px 8px,
+    currentColor 8px 11px, transparent 11px 13px,
+    currentColor 13px 14px, transparent 14px 18px
+  );
+}
+
+/* Fleet sparkbars grow up from the baseline, staggered per bar */
+@keyframes growUp {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+.grow-up {
+  transform-origin: bottom;
+  animation: growUp 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.spark-glow { box-shadow: 0 0 12px rgba(55, 230, 164, 0.35); }
+
 /* Thin scrollbars, fintech feel */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb { @apply bg-edge rounded-full; }
