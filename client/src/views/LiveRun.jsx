@@ -16,6 +16,7 @@ export default function LiveRun({ state, onComplete }) {
   const [notice, setNotice] = useState(null);
 
   const task = state.tasks.find((t) => t.id === selectedTask);
+  const robot = state.robots.find((r) => r.id === selectedRobot) || state.robots[0];
 
   // Follow the stream: keep the newest stage (and finally the receipt) in view
   // so the presenter never has to scroll mid-run.
@@ -100,7 +101,7 @@ export default function LiveRun({ state, onComplete }) {
                   selectedRobot === r.id ? 'border-accent bg-accent/5 text-accent' : 'border-edge bg-panel2 text-muted hover:border-muted/40'
                 }`}
               >
-                <RobotAvatar type={r.type} size={30} className={selectedRobot === r.id ? 'text-accent' : 'text-muted'} />
+                <RobotAvatar type={r.type} size={38} className={selectedRobot === r.id ? 'text-accent' : 'text-muted'} />
                 {r.name}
               </button>
             ))}
@@ -139,12 +140,24 @@ export default function LiveRun({ state, onComplete }) {
       <div className="min-h-[400px]">
         {stages.length === 0 && !running && (
           <div className="h-full rounded-2xl border border-dashed border-edge grid place-items-center text-center p-10">
-            <div>
-              <div className="text-5xl mb-3">🤖</div>
-              <div className="text-lg font-semibold">Press Run Task</div>
-              <p className="text-sm text-muted mt-1 max-w-sm">
-                Watch the agent diagnose the failure, shop the marketplace, reason about the economics,
-                clear policy, buy the skill, and retry — in about 20 seconds.
+            <div className="max-w-md">
+              {/* scene: the selected robot facing its obstacle */}
+              <div className="flex items-center justify-center gap-4 mb-5">
+                <div className="h-20 w-20 rounded-2xl bg-accent/10 text-accent grid place-items-center shrink-0">
+                  <RobotAvatar type={robot.type} size={64} />
+                </div>
+                <div className="text-2xl text-muted">→</div>
+                <div className="flex flex-col items-center">
+                  <div className="h-14 w-9 rounded-md border-2 border-dashed border-muted/50 bg-muted/5" title="transparent obstacle" />
+                  <span className="mt-1 text-[10px] font-mono text-muted">can't see it</span>
+                </div>
+              </div>
+              <div className="text-lg font-semibold">{robot.name} is ready</div>
+              <p className="text-sm text-muted mt-1">{task.description}</p>
+              <p className="text-xs text-muted/70 mt-3">
+                Press <span className="text-accent font-semibold">Run Task</span> — the agent diagnoses the
+                failure, shops the marketplace, reasons on economics, clears policy, buys the skill, and
+                retries. ~20 seconds.
               </p>
             </div>
           </div>
