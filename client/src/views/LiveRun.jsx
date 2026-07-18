@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { runTask as runTaskStream, money } from '../api.js';
 import StageTimeline from '../components/StageTimeline.jsx';
 import ReceiptCard from '../components/ReceiptCard.jsx';
@@ -12,6 +12,13 @@ export default function LiveRun({ state, onComplete }) {
   const [notice, setNotice] = useState(null);
 
   const task = state.tasks.find((t) => t.id === selectedTask);
+
+  // Follow the stream: keep the newest stage (and finally the receipt) in view
+  // so the presenter never has to scroll mid-run.
+  const bottomRef = useRef(null);
+  useEffect(() => {
+    if (running || receipt) bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [stages.length, receipt, running]);
 
   const run = () => {
     setStages([]);
@@ -114,13 +121,14 @@ export default function LiveRun({ state, onComplete }) {
           </div>
         )}
 
-        {stages.length > 0 && <StageTimeline stages={stages} />}
+        {stages.length > 0 && <StageTimeline stages={stages} live={running} />}
 
         {receipt && (
           <div className="mt-2 max-w-xl">
             <ReceiptCard r={receipt} fresh />
           </div>
         )}
+        <div ref={bottomRef} />
       </div>
     </div>
   );
