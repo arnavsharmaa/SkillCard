@@ -5,7 +5,7 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 /* Demo-table readability: nudge the whole rem scale up on laptop screens */
@@ -23,7 +23,7 @@ body,
 
 body {
   @apply bg-ink text-white font-sans antialiased;
-  background-image: radial-gradient(600px 400px at 80% -10%, rgba(55, 230, 164, 0.06), transparent);
+  background-image: radial-gradient(600px 400px at 80% -10%, rgba(12, 98, 145, 0.06), transparent);
 }
 
 /* Stage / receipt entrance animation */
@@ -43,12 +43,12 @@ body {
 
 /* Hero savings counter: faint glow always, hot glow + pop while ticking up */
 .savings-number {
-  text-shadow: 0 0 18px rgba(55, 230, 164, 0.25);
+  text-shadow: 0 0 18px rgba(12, 98, 145, 0.25);
 }
 .savings-number-hot {
   text-shadow:
-    0 0 22px rgba(55, 230, 164, 0.6),
-    0 0 64px rgba(55, 230, 164, 0.3);
+    0 0 22px rgba(12, 98, 145, 0.6),
+    0 0 64px rgba(12, 98, 145, 0.3);
 }
 
 /* "+$178" chip that floats up beside the counter as it ticks */
@@ -64,9 +64,9 @@ body {
 }
 
 @keyframes pulseRing {
-  0% { box-shadow: 0 0 0 0 rgba(55, 230, 164, 0.5); }
-  70% { box-shadow: 0 0 0 12px rgba(55, 230, 164, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(55, 230, 164, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(12, 98, 145, 0.5); }
+  70% { box-shadow: 0 0 0 12px rgba(12, 98, 145, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(12, 98, 145, 0); }
 }
 .pulse-ring { animation: pulseRing 1.6s infinite; }
 
@@ -108,9 +108,9 @@ body {
 /* Soft neutral pulse ring on the current stage's number while the run is live.
    Lives on its own child element so unmounting it never restarts the dot's pop */
 @keyframes livePulse {
-  0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.35); }
-  70% { box-shadow: 0 0 0 9px rgba(255, 255, 255, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(12, 98, 145, 0.35); }
+  70% { box-shadow: 0 0 0 9px rgba(12, 98, 145, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(12, 98, 145, 0); }
 }
 .live-ring {
   animation: livePulse 1.4s infinite;
@@ -119,8 +119,8 @@ body {
 
 /* POLICY block: slam in with a shake, then keep a slow red glow breathing */
 @keyframes redGlow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 92, 108, 0.35), 0 0 20px rgba(255, 92, 108, 0.12); }
-  50% { box-shadow: 0 0 0 3px rgba(255, 92, 108, 0.18), 0 0 42px rgba(255, 92, 108, 0.35); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(166, 52, 70, 0.35), 0 0 20px rgba(166, 52, 70, 0.12); }
+  50% { box-shadow: 0 0 0 3px rgba(166, 52, 70, 0.18), 0 0 42px rgba(166, 52, 70, 0.35); }
 }
 .blocked-card {
   animation:
@@ -146,7 +146,7 @@ body {
 /* Receipt: perforated tear-off bottom edge (sawtooth in panel color) */
 .receipt-tear {
   height: 10px;
-  background: conic-gradient(from 135deg at 50% 0, #121419 90deg, transparent 0) 0 0 / 14px 100% repeat-x;
+  background: conic-gradient(from 135deg at 50% 0, #fbfef9 90deg, transparent 0) 0 0 / 14px 100% repeat-x;
 }
 
 /* Receipt: rotated PAID stamp */
@@ -156,15 +156,15 @@ body {
   top: 4.5rem;
   z-index: 10;
   transform: rotate(-12deg);
-  border: 2px solid rgba(55, 230, 164, 0.7);
+  border: 2px solid rgba(12, 98, 145, 0.7);
   border-radius: 6px;
   padding: 2px 12px;
-  color: rgba(55, 230, 164, 0.9);
+  color: rgba(12, 98, 145, 0.9);
   font-size: 15px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.25em;
-  box-shadow: inset 0 0 14px rgba(55, 230, 164, 0.15);
+  box-shadow: inset 0 0 14px rgba(12, 98, 145, 0.15);
   pointer-events: none;
 }
 @keyframes stampIn {
@@ -176,7 +176,7 @@ body {
 
 /* Receipt: fake barcode footer */
 .barcode {
-  color: #cfd6e1;
+  color: #3d4449;
   background: repeating-linear-gradient(
     90deg,
     currentColor 0 2px, transparent 2px 5px,
@@ -195,7 +195,7 @@ body {
   transform-origin: bottom;
   animation: growUp 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
-.spark-glow { box-shadow: 0 0 12px rgba(55, 230, 164, 0.35); }
+.spark-glow { box-shadow: 0 0 12px rgba(12, 98, 145, 0.35); }
 
 /* Thin scrollbars, fintech feel */
 ::-webkit-scrollbar { width: 10px; height: 10px; }

@@ -235,7 +235,7 @@ export default function StageTimeline({ stages, live = false }) {
               <div
                 className={`pop-in relative mt-1 h-8 w-8 shrink-0 rounded-full border border-edge flex items-center justify-center font-mono text-sm font-bold ${
                   statusDot[s.status] || 'bg-edge'
-                } ${s.status === 'ok' ? 'text-ink' : 'text-white'}`}
+                } ${s.status === 'pending' ? 'text-white' : 'text-ink'}`}
               >
                 {active && <span className="live-ring absolute inset-0 rounded-full" />}
                 {meta.n}
