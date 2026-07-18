@@ -111,8 +111,10 @@ export async function runTask({ task, robot, marketplace, reasoningResult, diagn
   }
 
   // 4. REASON (OpenAI) ----------------------------------------------------
-  const rs = reasoningResult || (await reason(dg.data.diagnosis, candidates, task, robot));
-  let chosen = candidates.find((c) => c.id === rs.data.chosen_skill_id) || candidates[0];
+  // Deterministic proposal: highest expected value (candidates are EV-ranked).
+  // The model articulates the reasoning; it does not get to change the pick.
+  let chosen = candidates[0];
+  const rs = reasoningResult || (await reason(dg.data.diagnosis, candidates, chosen, task, robot));
   emit({
     stage: 'REASON',
     status: 'ok',

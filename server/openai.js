@@ -69,25 +69,32 @@ export async function diagnose(task, robot, telemetry) {
 }
 
 // STAGE 4 — REASON
-export async function reason(diagnosis, candidates, task, robot) {
-  const canned = cannedReasoning(candidates, task);
+// The agent's CHOICE is deterministic: it proposes the highest-expected-value
+// candidate (a formula, not a judgment call). The model's job is to ARTICULATE
+// that reasoning in plain language and explain why each alternative lost — which
+// is what it's good at, and what makes the agent look like it's thinking. This
+// also keeps the demo's policy-block beat reliable (a "smart" live model would
+// otherwise dodge the blocked option and never trigger the block).
+export async function reason(diagnosis, candidates, chosen, task, robot) {
+  const canned = cannedReasoning(candidates, task, chosen);
   if (STUBBED) return { data: canned, source: 'stub' };
 
+  const ev = (c) => Math.round(task.taskValue * c.successRate - c.price);
   const system =
-    'You are an autonomous procurement agent for a robot fleet. Choose the single best skill ' +
-    'to purchase to recover the failed task. Weigh price, success rate, expected value against ' +
-    'the task value. Optimize for the best expected value — pick the single highest-EV option. ' +
-    'Do NOT enforce the robot policy yourself; a separate policy engine downstream will approve, ' +
-    'flag, or block your choice. Cite the actual economics. For every option you do ' +
-    'NOT pick, give a concrete reason it lost. Respond ONLY with JSON: ' +
-    '{"chosen_skill_id": string, "justification": string (2-3 sentences citing numbers), ' +
-    '"rejected": [{"skill_id": string, "reason": string}]}.';
+    'You are an autonomous procurement agent for a robot fleet. The agent has already ' +
+    'selected the skill with the highest expected value (success_rate × task_value − price). ' +
+    'Your job is to ARTICULATE that decision, not change it. Write a 2-3 sentence justification ' +
+    'for the chosen skill citing the actual numbers (expected value vs the task value), and for ' +
+    'every other candidate give one concrete reason it lost. Do NOT enforce robot policy — a ' +
+    'separate policy engine handles that. Respond ONLY with JSON: ' +
+    '{"justification": string, "rejected": [{"skill_id": string, "reason": string}]}.';
 
   const user = JSON.stringify({
     diagnosis,
     task_value: task.taskValue,
     human_baseline_cost: task.humanBaselineCost,
-    robot_policy: robot.policy,
+    chosen_skill_id: chosen.id,
+    chosen_expected_value: ev(chosen),
     candidate_skills: candidates.map((c) => ({
       skill_id: c.id,
       name: c.name,
@@ -95,6 +102,7 @@ export async function reason(diagnosis, candidates, task, robot) {
       price: c.price,
       pricing_model: c.pricingModel,
       success_rate: c.successRate,
+      expected_value: ev(c),
       required_hardware: c.requiredHardware,
       certifications: c.certifications,
       category: c.category,
@@ -103,9 +111,9 @@ export async function reason(diagnosis, candidates, task, robot) {
 
   try {
     const data = await callJSON(system, user);
-    const ok = candidates.some((c) => c.id === data.chosen_skill_id);
-    if (!ok || !data.justification) throw new Error('bad-shape');
+    if (!data.justification) throw new Error('bad-shape');
     if (!Array.isArray(data.rejected)) data.rejected = canned.rejected;
+    data.chosen_skill_id = chosen.id;
     return { data, source: 'openai' };
   } catch (err) {
     console.error('[REASON fallback]', err.message);

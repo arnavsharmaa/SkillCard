@@ -43,22 +43,22 @@ export const CANNED_DIAGNOSIS = {
 
 // Reasoning fallback is generated dynamically from the actual candidate list so
 // it always references real skills/prices. Returns strict-JSON-shaped object.
-export function cannedReasoning(candidates, task) {
+export function cannedReasoning(candidates, task, preChosen) {
   if (!candidates || candidates.length === 0) {
     return { chosen_skill_id: null, justification: 'No candidate skills available.', rejected: [] };
   }
 
-  // Choose the best expected-value option that isn't a teleop/hardware trap,
-  // mirroring what the model should conclude.
+  // Score by expected value. The agent optimizes PURE expected value; the
+  // downstream policy engine disposes (may block and force a fallback).
   const scored = candidates.map((c) => ({
     skill: c,
     ev: Math.round(task.taskValue * c.successRate - c.price),
   }));
   scored.sort((a, b) => b.ev - a.ev);
 
-  // The agent optimizes PURE expected value — it does not enforce policy itself.
-  // The downstream policy engine disposes (may block and force a fallback).
-  const chosen = scored[0];
+  // Use the caller's deterministic pick when provided (keeps fallback aligned
+  // with the server's choice); otherwise the highest-EV option.
+  const chosen = (preChosen && scored.find((s) => s.skill.id === preChosen.id)) || scored[0];
 
   const rejected = scored
     .filter((s) => s.skill.id !== chosen.skill.id)
