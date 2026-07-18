@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { runTask as runTaskStream, money } from '../api.js';
 import StageTimeline from '../components/StageTimeline.jsx';
 import ReceiptCard from '../components/ReceiptCard.jsx';
@@ -15,6 +15,13 @@ export default function LiveRun({ state, onComplete }) {
   const [notice, setNotice] = useState(null);
 
   const task = state.tasks.find((t) => t.id === selectedTask);
+
+  // Follow the stream: keep the newest stage (and finally the receipt) in view
+  // so the presenter never has to scroll mid-run.
+  const bottomRef = useRef(null);
+  useEffect(() => {
+    if (running || receipt) bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [stages.length, receipt, running]);
 
   const run = () => {
     setStages([]);
@@ -54,7 +61,7 @@ export default function LiveRun({ state, onComplete }) {
   };
 
   return (
-    <div className="grid lg:grid-cols-[340px_1fr] gap-6">
+    <div className="grid lg:grid-cols-[360px_1fr] gap-6">
       {/* control column */}
       <div className="space-y-4">
         <div className="rounded-2xl border border-edge bg-panel p-5">
@@ -70,10 +77,10 @@ export default function LiveRun({ state, onComplete }) {
                 } ${running ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
                 <div className="text-sm text-white/90 leading-snug">{t.description}</div>
-                <div className="mt-1.5 flex items-center gap-2 text-[11px] font-mono text-muted">
-                  <span className="text-accent">{money(t.taskValue)} value</span>
-                  <span>· {t.difficulty}</span>
-                  <span>· needs {t.requiredCapability}</span>
+                <div className="mt-1.5 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] font-mono text-muted">
+                  <span className="whitespace-nowrap text-accent">{money(t.taskValue)} value</span>
+                  <span className="whitespace-nowrap">· {t.difficulty}</span>
+                  <span className="whitespace-nowrap">· needs {t.requiredCapability}</span>
                 </div>
               </button>
             ))}
@@ -141,7 +148,7 @@ export default function LiveRun({ state, onComplete }) {
           </div>
         )}
 
-        {stages.length > 0 && <StageTimeline stages={stages} />}
+        {stages.length > 0 && <StageTimeline stages={stages} live={running} />}
 
         {escalation && !receipt && (
           <div className="mt-2 max-w-xl">
@@ -159,6 +166,7 @@ export default function LiveRun({ state, onComplete }) {
             <ReceiptCard r={receipt} fresh />
           </div>
         )}
+        <div ref={bottomRef} />
       </div>
     </div>
   );
