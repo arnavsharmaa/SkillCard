@@ -8,6 +8,13 @@
   color-scheme: dark;
 }
 
+/* Demo-table readability: nudge the whole rem scale up on laptop screens */
+@media (min-width: 1280px) {
+  html {
+    font-size: 17px;
+  }
+}
+
 html,
 body,
 #root {
