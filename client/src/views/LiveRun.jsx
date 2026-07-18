@@ -2,13 +2,16 @@ import React, { useState } from 'react';
 import { runTask as runTaskStream, money } from '../api.js';
 import StageTimeline from '../components/StageTimeline.jsx';
 import ReceiptCard from '../components/ReceiptCard.jsx';
+import OperatorConsole from '../components/OperatorConsole.jsx';
 
 export default function LiveRun({ state, onComplete }) {
   const [selectedTask, setSelectedTask] = useState('task-01');
   const [selectedRobot, setSelectedRobot] = useState('rbt-01');
+  const [simulateFail, setSimulateFail] = useState(false);
   const [stages, setStages] = useState([]);
   const [running, setRunning] = useState(false);
   const [receipt, setReceipt] = useState(null);
+  const [escalation, setEscalation] = useState(null); // { escalationId, task, robotName }
   const [notice, setNotice] = useState(null);
 
   const task = state.tasks.find((t) => t.id === selectedTask);
@@ -16,6 +19,7 @@ export default function LiveRun({ state, onComplete }) {
   const run = () => {
     setStages([]);
     setReceipt(null);
+    setEscalation(null);
     setNotice(null);
     setRunning(true);
 
@@ -29,6 +33,9 @@ export default function LiveRun({ state, onComplete }) {
         },
         onDone: (d) => {
           setRunning(false);
+          if (d.needsOperator) {
+            setEscalation({ escalationId: d.escalationId, task: d.task, robotName: d.robot?.name });
+          }
           onComplete?.(d);
         },
         onError: () => {
@@ -36,8 +43,14 @@ export default function LiveRun({ state, onComplete }) {
           setNotice('That run hit a snag — press Run Task to try again.');
         },
       },
-      850
+      850,
+      simulateFail
     );
+  };
+
+  const onOperatorResolved = (result) => {
+    setReceipt(result.receipt);
+    onComplete?.(result);
   };
 
   return (
@@ -96,6 +109,20 @@ export default function LiveRun({ state, onComplete }) {
         >
           {running ? 'Running…' : '▶  Run Task'}
         </button>
+
+        {/* Demo control: force the purchased skill to fail so the robot
+            escalates to a human operator. */}
+        <label className={`flex items-center gap-2.5 rounded-xl border border-edge bg-panel px-4 py-3 text-sm ${running ? 'opacity-60' : 'cursor-pointer'}`}>
+          <input
+            type="checkbox"
+            checked={simulateFail}
+            disabled={running}
+            onChange={(e) => setSimulateFail(e.target.checked)}
+            className="h-4 w-4 accent-warn"
+          />
+          <span className="text-white/85">Simulate skill failure</span>
+          <span className="ml-auto text-[11px] text-muted">→ human escalation</span>
+        </label>
         {notice && <div className="text-xs text-warn text-center">{notice}</div>}
       </div>
 
@@ -115,6 +142,17 @@ export default function LiveRun({ state, onComplete }) {
         )}
 
         {stages.length > 0 && <StageTimeline stages={stages} />}
+
+        {escalation && !receipt && (
+          <div className="mt-2 max-w-xl">
+            <OperatorConsole
+              escalationId={escalation.escalationId}
+              task={escalation.task}
+              robotName={escalation.robotName}
+              onResolved={onOperatorResolved}
+            />
+          </div>
+        )}
 
         {receipt && (
           <div className="mt-2 max-w-xl">

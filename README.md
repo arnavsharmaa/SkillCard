@@ -1,15 +1,23 @@
 # SkillCard
 
-**Spend infrastructure for autonomous machines.**
+**Governed spending for autonomous machines. Ramp for autonomous work.**
 
-Every robot in a fleet gets a virtual card, a budget, and a spending policy. When a
-robot fails a task because it lacks a capability, an autonomous agent diagnoses the
-failure, shops a marketplace of purchasable skills, reasons about the economics,
-clears the purchase against company policy, buys the approved option, retries the
-task, and emits a receipt proving why the money was spent and what it saved.
+SkillCard gives robots **delegated purchasing authority** so they can resolve
+operational failures without giving up enterprise control. Each robot gets a virtual
+card, a budget, and a written spend policy. When a robot fails a task because it lacks a
+capability, an autonomous agent diagnoses the failure, shops a marketplace of
+purchasable skills, reasons about the economics, and proposes a purchase — which a
+deterministic **policy engine** then approves, flags, or blocks. On approval it buys the
+skill, retries the task, and emits a receipt proving why the money was spent and what it
+saved.
+
+**The robot never owns the card or makes unrestricted decisions.** The business defines
+the spending limits, approved vendors, permission requirements, and human-approval
+thresholds, and retains ownership and liability. The robot proposes and executes
+purchases *under delegated authority*.
 
 There is no physical robot. Everything robotic is simulated with seeded, deterministic
-outcomes. **The product is the financial reasoning layer, not the robotics.**
+outcomes. **The product is the financial governance layer, not the robotics.**
 
 ---
 
@@ -50,6 +58,25 @@ Pressing **Run Task** streams eight stages to the UI over Server-Sent Events:
 **The model proposes, policy disposes.** The agent optimizes pure expected value; the
 deterministic policy engine is what actually authorizes (or blocks) the spend.
 
+### Governance the policy engine enforces (all deterministic)
+
+- **Auto-approve ceiling** — purchases under the per-transaction limit clear automatically; over it, they're **flagged for human approval**.
+- **Blocked categories** — e.g. a fully autonomous unit blocks human teleop.
+- **Required certifications** — e.g. SOC2.
+- **Vendor verification** — skills from unverified vendors are hard-blocked.
+- **Permission scoping** — a skill demanding *unrestricted* camera/motion access is hard-blocked (the "malicious skill" defense).
+- **Hardware compatibility** — skills needing hardware the robot lacks are rejected.
+
+The marketplace stage shows a **compatible / needs-approval / blocked** badge on every
+candidate, so governance is visible at a glance.
+
+### Human-in-the-loop escalation
+
+Toggle **Simulate skill failure** before a run: the purchased skill underperforms in the
+physical world, and the robot escalates to an **approved human operator** (single-laptop
+Operator Console). The operator takes time-boxed control, resolves the task, and access
+is revoked — with the operator charge attached to the same auditable task record.
+
 ---
 
 ## How the OpenAI API is used
@@ -88,18 +115,27 @@ references the real skills and prices, so the on-screen reasoning always stays c
 
 ```
 server/
-  index.js       Express + in-memory state + SSE run stream
+  index.js       Express + in-memory state + SSE run stream + operator endpoint
   seed.js        Robots, tasks, marketplace (all seeded in code)
-  loop.js        The 8-stage loop + deterministic policy engine
+  loop.js        The 8-stage loop + deterministic policy engine + escalation
   openai.js      The two gpt-4o calls (strict JSON, try/catch)
   fallbacks.js   Canned diagnosis + reasoning + telemetry
 client/
   src/
     App.jsx           Shell: pinned savings counter + tabs
     views/            LiveRun, Receipts, Fleet
-    components/       StageTimeline, ReceiptCard, RobotCard, SavingsCounter
-    api.js            SSE client + money formatter
+    components/       StageTimeline, ReceiptCard, RobotCard, SavingsCounter, OperatorConsole
+    api.js            SSE client + operator finalize + money formatter
 ```
+
+### Key endpoints (all local, no deploy)
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /api/state` | robots, tasks, marketplace, receipts, total saved |
+| `GET /api/run/:taskId?robotId=&fail=1` | the core loop, streamed stage-by-stage over SSE (`fail=1` forces escalation) |
+| `POST /api/operator/:escalationId` | finalizes an escalated task after the human operator resolves it |
+| `POST /api/reset` | resets in-memory state |
 
 ## Tech stack
 

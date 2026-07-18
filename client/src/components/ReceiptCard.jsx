@@ -33,7 +33,7 @@ export default function ReceiptCard({ r, fresh }) {
         <div className="grid grid-cols-2 gap-4 text-sm">
           <Field label="Robot">{r.robot.name}</Field>
           <Field label="Outcome">
-            <span className="text-accent">✓ {r.outcome}</span>
+            <span className={r.operator ? 'text-warn' : 'text-accent'}>✓ {r.outcome}</span>
           </Field>
           <Field label="Task" span>{r.task.description}</Field>
         </div>
@@ -44,15 +44,24 @@ export default function ReceiptCard({ r, fresh }) {
           <p className="text-sm text-white/85 leading-relaxed">{r.diagnosis}</p>
         </div>
 
-        {/* purchase */}
-        <div className="rounded-xl border border-edge bg-panel2 p-3">
+        {/* purchase (skill line, + operator line if escalated) */}
+        <div className="rounded-xl border border-edge bg-panel2 p-3 space-y-2">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm font-semibold">{r.skill.name}</div>
               <div className="text-xs text-muted">{r.skill.vendor} · {r.skill.pricingModel}</div>
             </div>
-            <div className="font-mono text-lg">{money(r.cost)}</div>
+            <div className="font-mono text-lg">{money(r.operator ? r.skillCost : r.cost)}</div>
           </div>
+          {r.operator && (
+            <div className="flex items-center justify-between border-t border-edge pt-2">
+              <div>
+                <div className="text-sm font-semibold text-warn">Human operator (escalation)</div>
+                <div className="text-xs text-muted">{r.operator.vendor} · access revoked ✓</div>
+              </div>
+              <div className="font-mono text-lg text-warn">{money(r.operatorCost)}</div>
+            </div>
+          )}
         </div>
 
         {/* blocked (if any) */}
@@ -85,6 +94,13 @@ export default function ReceiptCard({ r, fresh }) {
           <Stat label="Human baseline" v={money(r.humanBaseline)} />
           <Stat label="Net saved" v={money(r.netSaved)} accent={r.netSaved >= 0} />
         </div>
+
+        {r.downtimeAvoided > 0 && (
+          <div className="flex items-center justify-between rounded-lg border border-accent/25 bg-accent/5 px-3 py-2">
+            <span className="text-[11px] uppercase tracking-wider text-muted">Est. downtime avoided</span>
+            <span className="font-mono text-accent font-semibold">{money(r.downtimeAvoided)}</span>
+          </div>
+        )}
 
         <div className="flex items-center justify-between border-t border-edge pt-3">
           <Label>Accounting category</Label>

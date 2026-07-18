@@ -5,7 +5,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { seedRobots, seedTasks, seedMarketplace } from './seed.js';
-import { runTask } from './loop.js';
+import { runTask, resolveWithOperator } from './loop.js';
 import { MODEL } from './openai.js';
 
 const app = express();
@@ -21,6 +21,7 @@ const state = {
   marketplace: seedMarketplace(),
   receipts: [],
   totalSaved: 0,
+  pendingEscalations: {}, // escalationId -> { escalation, robotId }
 };
 
 // ---- Read endpoints -------------------------------------------------------
@@ -45,7 +46,20 @@ app.post('/api/reset', (_req, res) => {
   state.marketplace = seedMarketplace();
   state.receipts = [];
   state.totalSaved = 0;
+  state.pendingEscalations = {};
   res.json({ ok: true });
+});
+
+// ---- Operator console finalizes an escalated task -------------------------
+app.post('/api/operator/:escalationId', (req, res) => {
+  const pending = state.pendingEscalations[req.params.escalationId];
+  if (!pending) return res.status(404).json({ error: 'No pending escalation.' });
+  const robot = state.robots.find((r) => r.id === pending.robotId);
+  const { receipt, netSaved } = resolveWithOperator(pending.escalation, robot);
+  state.receipts.unshift(receipt);
+  state.totalSaved += netSaved;
+  delete state.pendingEscalations[req.params.escalationId];
+  res.json({ receipt, netSaved, totalSaved: state.totalSaved, robot });
 });
 
 // ---- The core loop as an SSE stream ---------------------------------------
@@ -74,10 +88,25 @@ app.get('/api/run/:taskId', async (req, res) => {
 
   try {
     const result = await runTask(
-      { task, robot, marketplace: state.marketplace },
+      { task, robot, marketplace: state.marketplace, simulateFailure: req.query.fail === '1' },
       (stage) => send('stage', stage),
       Number(req.query.delay) || 900
     );
+
+    if (result.needsOperator) {
+      // Park the escalation context so the operator console can finalize it.
+      const escId = result.escalation.receiptBase.id;
+      state.pendingEscalations[escId] = { escalation: result.escalation, robotId: robot.id };
+      send('done', {
+        purchased: true,
+        needsOperator: true,
+        escalationId: escId,
+        task: { id: task.id, description: task.description },
+        robot: state.robots.find((r) => r.id === robot.id),
+        totalSaved: state.totalSaved,
+      });
+      return res.end();
+    }
 
     if (result.purchased && result.receipt) {
       state.receipts.unshift(result.receipt);
