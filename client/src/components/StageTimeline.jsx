@@ -194,29 +194,35 @@ function SourceChip({ source }) {
   return null;
 }
 
-export default function StageTimeline({ stages }) {
+export default function StageTimeline({ stages, live = false }) {
   return (
     <div className="relative">
       {stages.map((s, i) => {
         const meta = STAGE_META[s.stage] || { n: i + 1, label: s.stage };
         const last = i === stages.length - 1;
+        const active = live && last;
         return (
-          <div key={i} className="relative flex gap-4 rise-in">
+          <div key={i} className="relative flex gap-4">
             {/* rail */}
             <div className="flex flex-col items-center">
-              <div className={`mt-1 h-7 w-7 shrink-0 rounded-full border border-edge flex items-center justify-center font-mono text-xs ${statusDot[s.status] || 'bg-edge'} ${s.status === 'ok' ? 'text-ink' : 'text-white'}`}>
+              <div
+                className={`pop-in relative mt-1 h-8 w-8 shrink-0 rounded-full border border-edge flex items-center justify-center font-mono text-sm font-bold ${
+                  statusDot[s.status] || 'bg-edge'
+                } ${s.status === 'ok' ? 'text-ink' : 'text-white'}`}
+              >
+                {active && <span className="live-ring absolute inset-0 rounded-full" />}
                 {meta.n}
               </div>
-              {!last && <div className="w-px flex-1 bg-edge my-1" />}
+              {!last && <div className="draw-down w-px flex-1 bg-edge my-1" />}
             </div>
             {/* body */}
-            <div className={`flex-1 pb-6 ${last ? '' : ''}`}>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[11px] uppercase tracking-[0.18em] text-muted">{meta.label}</span>
-                <span className={`h-1.5 w-1.5 rounded-full ${statusDot[s.status]}`} />
+            <div className="stage-in flex-1 pb-5">
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="text-xs uppercase tracking-[0.18em] text-muted">{meta.label}</span>
+                <span className={`h-1.5 w-1.5 rounded-full ${statusDot[s.status]} ${active ? 'animate-pulse' : ''}`} />
               </div>
-              <div className="rounded-xl border border-edge bg-panel p-3.5">
-                <div className="text-sm font-semibold text-white/90 mb-2">{s.title}</div>
+              <div className="rounded-xl border border-edge bg-panel p-4">
+                <div className="text-[15px] font-semibold text-white/90 mb-2">{s.title}</div>
                 <StageBody s={s} />
               </div>
             </div>
