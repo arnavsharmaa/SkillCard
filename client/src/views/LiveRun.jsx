@@ -4,6 +4,7 @@ import StageTimeline from '../components/StageTimeline.jsx';
 import ReceiptCard from '../components/ReceiptCard.jsx';
 import OperatorConsole from '../components/OperatorConsole.jsx';
 import ApprovalModal from '../components/ApprovalModal.jsx';
+import OverrideModal from '../components/OverrideModal.jsx';
 import RobotAvatar from '../components/RobotAvatar.jsx';
 
 export default function LiveRun({ state, onComplete }) {
@@ -15,6 +16,7 @@ export default function LiveRun({ state, onComplete }) {
   const [receipt, setReceipt] = useState(null);
   const [escalation, setEscalation] = useState(null); // { escalationId, task, robotName }
   const [approval, setApproval] = useState(null); // flagged-purchase approval context
+  const [override, setOverride] = useState(null); // over-budget override context
   const [notice, setNotice] = useState(null);
 
   const task = state.tasks.find((t) => t.id === selectedTask);
@@ -37,6 +39,7 @@ export default function LiveRun({ state, onComplete }) {
     setReceipt(null);
     setEscalation(null);
     setApproval(null);
+    setOverride(null);
     setNotice(null);
     setRunning(true);
 
@@ -54,6 +57,7 @@ export default function LiveRun({ state, onComplete }) {
             setEscalation({ escalationId: d.escalationId, task: d.task, robotName: d.robot?.name });
           }
           if (d.needsApproval) setApproval(d.approval);
+          if (d.needsOverride) setOverride(d.override);
           onComplete?.(d);
         },
         onError: () => {
@@ -75,6 +79,14 @@ export default function LiveRun({ state, onComplete }) {
   // append the returned stages to the timeline and show the receipt.
   const onApprovalResolved = (result) => {
     setApproval(null);
+    if (result.stages) setStages((prev) => [...prev, ...result.stages]);
+    if (result.receipt) setReceipt(result.receipt);
+    onComplete?.(result);
+  };
+
+  // A budget override was authorized: append stages + show the receipt.
+  const onOverrideResolved = (result) => {
+    setOverride(null);
     if (result.stages) setStages((prev) => [...prev, ...result.stages]);
     if (result.receipt) setReceipt(result.receipt);
     onComplete?.(result);
@@ -191,6 +203,23 @@ export default function LiveRun({ state, onComplete }) {
               onError={() => {
                 setApproval(null);
                 setNotice('That approval hit a snag — press Run Task to try again.');
+              }}
+            />
+          </div>
+        )}
+
+        {override && !receipt && (
+          <div className="mt-2 max-w-xl">
+            <OverrideModal
+              override={override}
+              onResolved={onOverrideResolved}
+              onCancel={() => {
+                setOverride(null);
+                setNotice('Task left unresolved — no override authorized.');
+              }}
+              onError={() => {
+                setOverride(null);
+                setNotice('That override hit a snag — press Run Task to try again.');
               }}
             />
           </div>
