@@ -57,17 +57,20 @@ export function seedRobots() {
       name: 'Arm-Nova',
       model: 'Fixed-Base 6DOF Arm (sim)',
       type: 'arm',
-      monthlyBudget: 800,
-      spent: 95,
+      monthlyBudget: 300, // deliberately tight budget — nearly exhausted
+      spent: 270,
       policy: {
-        autoApproveCeiling: 75,
+        autoApproveCeiling: 300, // high ceiling: the constraint here is the budget, not per-txn
         blockedCategories: [],
         requiredCertifications: ['SOC2'],
         requireVerifiedVendor: true,
         blockUnrestrictedPermissions: true,
       },
       capabilities: ['object-detection', 'precision-grasp'],
-      history: [{ label: 'Bin Pick Vision', amount: 95, ts: '2026-07-11' }],
+      history: [
+        { label: 'Bin Pick Vision', amount: 95, ts: '2026-07-11' },
+        { label: 'Precision Grasp Suite', amount: 175, ts: '2026-07-14' },
+      ],
       tasksCompleted: 1,
     },
   ];

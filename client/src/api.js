@@ -61,5 +61,12 @@ export async function chooseSkill(receiptId, skillId) {
   return r.json();
 }
 
+// Human authorizes a budget override for an over-budget purchase.
+export async function authorizeOverride(receiptId) {
+  const r = await fetch(`/api/override/${receiptId}`, { method: 'POST' });
+  if (!r.ok) throw new Error('override failed');
+  return r.json();
+}
+
 export const money = (n) =>
   (n < 0 ? '-$' : '$') + Math.abs(Math.round(n)).toLocaleString('en-US');

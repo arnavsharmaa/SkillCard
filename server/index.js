@@ -87,6 +87,13 @@ app.post('/api/skill-choice/:receiptId', (req, res) => {
   applyFinalize(res, req.params.receiptId, req.body.skillId, 'operator');
 });
 
+// Human authorizes a budget override to buy the over-budget skill anyway.
+app.post('/api/override/:receiptId', (req, res) => {
+  const pending = state.pendingApprovals[req.params.receiptId];
+  if (!pending) return res.status(404).json({ error: 'No pending override.' });
+  applyFinalize(res, req.params.receiptId, pending.chosen.id, 'budget-override');
+});
+
 // ---- Operator console finalizes an escalated task -------------------------
 app.post('/api/operator/:escalationId', (req, res) => {
   const pending = state.pendingEscalations[req.params.escalationId];
@@ -149,6 +156,18 @@ app.get('/api/run/:taskId', async (req, res) => {
         purchased: false,
         needsApproval: true,
         approval: a,
+      });
+      return res.end();
+    }
+
+    if (result.needsOverride) {
+      // Every viable skill is over budget — park it; client shows override modal.
+      const o = result.override;
+      state.pendingApprovals[o.receiptId] = o;
+      send('done', {
+        purchased: false,
+        needsOverride: true,
+        override: o,
       });
       return res.end();
     }

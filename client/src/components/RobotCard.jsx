@@ -4,6 +4,7 @@ import RobotAvatar from './RobotAvatar.jsx';
 
 export default function RobotCard({ robot }) {
   const remaining = robot.monthlyBudget - robot.spent;
+  const overBudget = remaining < 0;
   const pct = Math.min(100, Math.round((robot.spent / robot.monthlyBudget) * 100));
   const costPerTask = robot.tasksCompleted ? robot.spent / robot.tasksCompleted : 0;
 
@@ -23,7 +24,9 @@ export default function RobotCard({ robot }) {
       <div>
         <div className="flex justify-between text-xs font-mono mb-1">
           <span className="text-muted">spent {money(robot.spent)}</span>
-          <span className="text-accent">{money(remaining)} left</span>
+          <span className={overBudget ? 'text-danger font-semibold' : 'text-accent'}>
+            {overBudget ? `${money(Math.abs(remaining))} over` : `${money(remaining)} left`}
+          </span>
         </div>
         <div className="h-2.5 rounded-full bg-panel2 overflow-hidden">
           <div
@@ -91,6 +94,9 @@ export default function RobotCard({ robot }) {
           )}
           {robot.history[robot.history.length - 1]?.approvedBy === 'operator' && (
             <span className="shrink-0 rounded border border-edge bg-panel2 px-1 text-muted">operator pick</span>
+          )}
+          {robot.history[robot.history.length - 1]?.approvedBy === 'budget-override' && (
+            <span className="shrink-0 rounded border border-danger/40 bg-danger/10 px-1 text-danger">⛔ override</span>
           )}
         </div>
       </div>

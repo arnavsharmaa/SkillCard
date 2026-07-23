@@ -140,18 +140,40 @@ export async function runTask({ task, robot, marketplace, reasoningResult, diagn
     chosen = next;
     policy = applyPolicy(chosen, robot);
   }
+
+  // Budget affordability: even a policy-clean skill may exceed the robot's
+  // remaining monthly budget. Prefer the cheapest affordable, non-blocked
+  // fallback; if none fits the budget, a human budget override is required.
+  const remaining = robot.monthlyBudget - robot.spent;
+  let overBudget = false;
+  if (policy.decision !== 'block' && chosen.price > remaining) {
+    const affordable = candidates
+      .filter((c) => c.id !== chosen.id && c.price <= remaining && applyPolicy(c, robot).decision !== 'block')
+      .sort((a, b) => (task.taskValue * b.successRate - b.price) - (task.taskValue * a.successRate - a.price))[0];
+    if (affordable) {
+      fallbackChain.push({ skill: chosen, reasons: [`$${chosen.price} exceeds ${robot.name}'s remaining budget ($${remaining}).`] });
+      chosen = affordable;
+      policy = applyPolicy(chosen, robot);
+    } else {
+      overBudget = true;
+    }
+  }
+
   emit({
     stage: 'POLICY',
-    status: policy.decision === 'block' ? 'fail' : policy.decision === 'flag' ? 'warn' : 'ok',
+    status: overBudget || policy.decision === 'block' ? 'fail' : policy.decision === 'flag' ? 'warn' : 'ok',
     title: 'Policy engine reviews the purchase',
-    decision: policy.decision,
-    reasons: policy.reasons,
+    decision: overBudget ? 'over-budget' : policy.decision,
+    reasons: overBudget
+      ? [`Every viable skill exceeds ${robot.name}'s remaining budget ($${remaining}).`]
+      : policy.reasons,
     chosen_skill: chosen,
     blocked: fallbackChain.map((f) => ({ skill: f.skill, reasons: f.reasons })),
-    text:
-      fallbackChain.length > 0
-        ? `${fallbackChain[0].skill.name} was blocked — falling back to ${chosen.name}.`
-        : `${chosen.name} ${policy.decision === 'approve' ? 'auto-approved' : 'flagged for approval'}.`,
+    text: overBudget
+      ? `No skill fits ${robot.name}'s $${remaining} remaining budget — a budget override is required.`
+      : fallbackChain.length > 0
+      ? `${fallbackChain[0].skill.name} unavailable — falling back to ${chosen.name}.`
+      : `${chosen.name} ${policy.decision === 'approve' ? 'auto-approved' : 'flagged for approval'}.`,
   });
   await sleep(delayMs);
 
@@ -164,6 +186,26 @@ export async function runTask({ task, robot, marketplace, reasoningResult, diagn
       text: 'Every candidate was blocked by policy. No purchase made.',
     });
     return { purchased: false };
+  }
+
+  if (overBudget) {
+    // Every viable skill is over budget — pause for a human budget override.
+    return {
+      purchased: false,
+      needsOverride: true,
+      override: {
+        receiptId,
+        taskId: task.id,
+        robotId: robot.id,
+        chosen: { id: chosen.id, name: chosen.name, vendor: chosen.vendor, price: chosen.price, pricingModel: chosen.pricingModel },
+        remaining,
+        budget: robot.monthlyBudget,
+        spent: robot.spent,
+        diagnosis: dg.data.diagnosis,
+        rejected: rs.data.rejected || [],
+        fallbackChain: fallbackChain.map((f) => ({ name: f.skill.name, reasons: f.reasons })),
+      },
+    };
   }
 
   if (policy.decision === 'flag') {
@@ -278,7 +320,8 @@ export function finalizePurchase(task, robot, chosen, ctx) {
   robot.history.push({ label: chosen.name, amount: chosen.price, ts: '2026-07-18', approvedBy });
   robot.tasksCompleted += 1;
   const netSaved = task.humanBaselineCost - chosen.price;
-  const policyDecision = approvedBy === 'operator' ? 'operator-chosen' : 'human-approved';
+  const policyDecision =
+    approvedBy === 'operator' ? 'operator-chosen' : approvedBy === 'budget-override' ? 'budget-override' : 'human-approved';
   const receipt = {
     id: receiptId,
     ts: '2026-07-18',
@@ -308,15 +351,27 @@ export function finalizePurchase(task, robot, chosen, ctx) {
       chosen_skill: chosen,
       text: `Operator chose ${chosen.name} from the marketplace.`,
     });
+  } else if (approvedBy === 'budget-override') {
+    stages.push({
+      stage: 'POLICY',
+      status: 'warn',
+      title: 'Budget override authorized',
+      decision: 'override',
+      chosen_skill: chosen,
+      text: `Human authorized a budget override to buy ${chosen.name}.`,
+    });
   }
+  const purchaseText =
+    approvedBy === 'operator'
+      ? `Operator-selected ${chosen.name} — charged $${chosen.price} to ${robot.name}'s card.`
+      : approvedBy === 'budget-override'
+      ? `Budget override — charged $${chosen.price} to ${robot.name}'s card (over the $${robot.monthlyBudget} budget).`
+      : `Human-approved — charged $${chosen.price} to ${robot.name}'s card (over the $${robot.policy.autoApproveCeiling} ceiling).`;
   stages.push({
     stage: 'PURCHASE',
     status: 'ok',
     title: 'Purchase executed on virtual card',
-    text:
-      approvedBy === 'operator'
-        ? `Operator-selected ${chosen.name} — charged $${chosen.price} to ${robot.name}'s card.`
-        : `Human-approved — charged $${chosen.price} to ${robot.name}'s card (over the $${robot.policy.autoApproveCeiling} ceiling).`,
+    text: purchaseText,
     amount: chosen.price,
     spent: robot.spent,
     remaining: robot.monthlyBudget - robot.spent,

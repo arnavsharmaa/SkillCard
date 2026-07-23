@@ -115,11 +115,14 @@ function StageBody({ s }) {
 
     case 'POLICY': {
       const hasBlock = s.blocked?.length > 0;
-      const resolved = s.decision !== 'block'; // a fallback (or clean pick) survived policy
+      const isOverBudget = s.decision === 'over-budget';
+      const resolved = s.decision !== 'block' && !isOverBudget; // a fallback survived policy
       const verdictChips = (
         <div className="flex flex-wrap items-center gap-2">
           {s.decision === 'approve' && <Chip tone="accent">AUTO-APPROVED</Chip>}
           {s.decision === 'flag' && <Chip tone="warn">FLAGGED FOR APPROVAL</Chip>}
+          {s.decision === 'operator' && <Chip tone="accent">OPERATOR CHOSEN</Chip>}
+          {s.decision === 'override' && <Chip tone="warn">BUDGET OVERRIDE</Chip>}
           {s.reasons?.map((r, i) => (
             <span key={i} className="text-xs text-muted">{r}</span>
           ))}
@@ -127,6 +130,19 @@ function StageBody({ s }) {
       );
       return (
         <div className="space-y-3">
+          {isOverBudget && (
+            <div className="blocked-card rounded-xl border-2 border-danger bg-danger/15 p-4">
+              <div className="text-[10px] font-bold uppercase tracking-[0.25em] text-danger/80 mb-1.5">
+                Budget exceeded
+              </div>
+              <div className="text-danger font-black text-lg sm:text-xl leading-tight mb-1.5">
+                ⛔ OVER BUDGET — {s.chosen_skill?.name}
+              </div>
+              {s.reasons?.map((r, i) => (
+                <p key={i} className="text-sm font-medium text-danger/90">{r}</p>
+              ))}
+            </div>
+          )}
           {hasBlock && (
             <div className="blocked-card rounded-xl border-2 border-danger bg-danger/15 p-4">
               <div className="text-[10px] font-bold uppercase tracking-[0.25em] text-danger/80 mb-1.5">
@@ -154,10 +170,12 @@ function StageBody({ s }) {
                 {verdictChips}
               </div>
             </div>
+          ) : isOverBudget ? (
+            verdictChips
           ) : (
             <div className="space-y-2">
               <p className={`text-sm ${
-                s.decision === 'approve' ? 'text-accent' : s.decision === 'flag' ? 'text-warn' : 'text-danger font-semibold'
+                s.decision === 'approve' ? 'text-accent' : s.decision === 'flag' ? 'text-warn' : s.decision === 'operator' || s.decision === 'override' ? 'text-warn' : 'text-danger font-semibold'
               }`}>
                 {s.text}
               </p>
