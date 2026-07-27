@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { getState, reset as resetState } from './api.js';
+import { getState, getHealth, reset as resetState } from './api.js';
 import SavingsCounter from './components/SavingsCounter.jsx';
+import ModelStatus from './components/ModelStatus.jsx';
 import LiveRun from './views/LiveRun.jsx';
 import Receipts from './views/Receipts.jsx';
 import Fleet from './views/Fleet.jsx';
@@ -16,11 +17,14 @@ const TABS = [
 export default function App() {
   const [tab, setTab] = useState('live');
   const [state, setState] = useState(null);
+  const [health, setHealth] = useState(null);
   const [resetCount, setResetCount] = useState(0);
 
   const refresh = useCallback(async () => {
     try {
-      setState(await getState());
+      const [s, h] = await Promise.all([getState(), getHealth()]);
+      setState(s);
+      setHealth(h);
     } catch (_) {
       // Server not up yet — keep prior state, never crash.
     }
@@ -59,7 +63,10 @@ export default function App() {
               <div className="h-7 w-7 rounded-lg bg-accent text-ink grid place-items-center font-black">S</div>
               <span className="text-lg font-bold tracking-tight">SkillCard</span>
             </div>
-            <div className="text-[11px] text-muted mt-0.5">Spend infrastructure for autonomous machines</div>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-[11px] text-muted">Spend infrastructure for autonomous machines</span>
+              <ModelStatus health={health} />
+            </div>
           </div>
           <SavingsCounter value={state.totalSaved} />
         </div>

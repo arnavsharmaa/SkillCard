@@ -24,10 +24,13 @@ const state = {
   pendingEscalations: {}, // escalationId -> { escalation, robotId }
   pendingApprovals: {}, // receiptId -> approval context awaiting a human decision
   generation: 0, // bumped on reset; a run started before a reset is discarded
+  lastSource: null, // 'openai' | 'fallback' | 'stub' — how the last run reasoned
 };
 
 // ---- Read endpoints -------------------------------------------------------
-app.get('/api/health', (_req, res) => res.json({ ok: true, model: MODEL, hasKey: !!process.env.OPENAI_API_KEY }));
+app.get('/api/health', (_req, res) =>
+  res.json({ ok: true, model: MODEL, hasKey: !!process.env.OPENAI_API_KEY, lastSource: state.lastSource })
+);
 
 app.get('/api/state', (_req, res) => {
   res.json({
@@ -51,6 +54,7 @@ app.post('/api/reset', (_req, res) => {
   state.pendingEscalations = {};
   state.pendingApprovals = {};
   state.generation += 1; // any run started before now is now stale
+  state.lastSource = null;
   res.json({ ok: true });
 });
 
@@ -138,7 +142,13 @@ app.get('/api/run/:taskId', async (req, res) => {
   try {
     const result = await runTask(
       { task, robot, marketplace: state.marketplace, simulateFailure: req.query.fail === '1' },
-      (stage) => send('stage', stage),
+      (stage) => {
+        // Record how the reasoning stages resolved (live model vs fallback).
+        if ((stage.stage === 'DIAGNOSE' || stage.stage === 'REASON') && stage.source) {
+          state.lastSource = stage.source;
+        }
+        send('stage', stage);
+      },
       Number(req.query.delay) || 900
     );
 

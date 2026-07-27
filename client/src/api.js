@@ -5,6 +5,11 @@ export async function getState() {
   return r.json();
 }
 
+export async function getHealth() {
+  const r = await fetch('/api/health', { cache: 'no-store' });
+  return r.json();
+}
+
 export async function reset() {
   await fetch('/api/reset', { method: 'POST' });
 }
