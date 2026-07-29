@@ -5,13 +5,17 @@ export default function SavingsCounter({ value }) {
   const [display, setDisplay] = useState(value);
   const [delta, setDelta] = useState(null);
   const [ticking, setTicking] = useState(false);
-  const from = useRef(value);
+  // Tracks the number currently on screen every frame, so a value change mid-tick
+  // (e.g. Reset while ticking) animates from where we actually are — not from a
+  // stale target — instead of freezing at a partial value.
+  const displayRef = useRef(value);
 
   useEffect(() => {
-    const start = from.current;
+    const start = displayRef.current;
     const end = value;
     if (start === end) return;
     if (end > start) setDelta({ amount: end - start, key: Date.now() });
+    else setDelta(null); // reset / decrease: clear any lingering "+$" chip
     setTicking(true);
     const dur = 1100;
     const t0 = performance.now();
@@ -19,10 +23,12 @@ export default function SavingsCounter({ value }) {
     const step = (t) => {
       const p = Math.min(1, (t - t0) / dur);
       const eased = 1 - Math.pow(1 - p, 3);
-      setDisplay(Math.round(start + (end - start) * eased));
+      const cur = Math.round(start + (end - start) * eased);
+      displayRef.current = cur;
+      setDisplay(cur);
       if (p < 1) raf = requestAnimationFrame(step);
       else {
-        from.current = end;
+        displayRef.current = end;
         setTicking(false);
       }
     };
