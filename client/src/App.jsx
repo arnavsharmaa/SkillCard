@@ -34,13 +34,30 @@ export default function App() {
     refresh();
   }, [refresh]);
 
-  const handleReset = async () => {
+  const handleReset = useCallback(async () => {
     await resetState();
     await refresh();
     // Remount LiveRun so the stage returns to script defaults: cleared
     // timeline, task-01 + Atlas-7 selected, failure sim off.
     setResetCount((n) => n + 1);
-  };
+  }, [refresh]);
+
+  // Presenter hotkeys: R = reset, 1-4 = switch tabs. (Enter = run lives in
+  // LiveRun.) Ignored while typing in a field or with a modifier held.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.target.matches?.('input, textarea, select, [contenteditable]')) return;
+      const k = e.key.toLowerCase();
+      if (k === 'r') handleReset();
+      else if (k === '1') setTab('live');
+      else if (k === '2') setTab('marketplace');
+      else if (k === '3') setTab('receipts');
+      else if (k === '4') setTab('fleet');
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [handleReset]);
 
   if (!state) {
     return (

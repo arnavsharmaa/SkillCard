@@ -34,6 +34,22 @@ export default function LiveRun({ state, onComplete }) {
   const cancelRef = useRef(null);
   useEffect(() => () => cancelRef.current?.(), []);
 
+  // Enter runs the task (hands-free demo). Refs keep the handler current without
+  // re-subscribing. Ignored while a run is in flight or a field/button is focused.
+  const runRef = useRef(null);
+  const runningRef = useRef(running);
+  runningRef.current = running;
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== 'Enter' || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.target.matches?.('input, textarea, select, button, [contenteditable]')) return;
+      e.preventDefault();
+      if (!runningRef.current) runRef.current?.();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   const run = () => {
     setStages([]);
     setReceipt(null);
@@ -69,6 +85,7 @@ export default function LiveRun({ state, onComplete }) {
       simulateFail
     );
   };
+  runRef.current = run;
 
   const onOperatorResolved = (result) => {
     setReceipt(result.receipt);
@@ -164,6 +181,9 @@ export default function LiveRun({ state, onComplete }) {
           <span className="ml-auto text-[11px] text-muted">→ human escalation</span>
         </label>
         {notice && <div className="text-xs text-warn text-center">{notice}</div>}
+        <div className="text-center text-[10px] font-mono text-muted/70">
+          shortcuts: <Kbd>⏎</Kbd> run · <Kbd>R</Kbd> reset · <Kbd>1</Kbd>–<Kbd>4</Kbd> tabs
+        </div>
       </div>
 
       {/* timeline column */}
@@ -246,3 +266,7 @@ export default function LiveRun({ state, onComplete }) {
     </div>
   );
 }
+
+const Kbd = ({ children }) => (
+  <kbd className="rounded border border-edge bg-panel2 px-1 py-0.5 text-[10px] font-mono text-muted">{children}</kbd>
+);
