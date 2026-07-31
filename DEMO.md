@@ -49,11 +49,31 @@ If they lean in, show what happens when the bought skill *doesn't* work:
 
 > This is single-laptop by design — no second device to fail at the table.
 
+## Extra governance beats (pick based on the judge)
+
+- **Human approval (over-ceiling):** run the **weld task** on **Spot-Delta** → the pick
+  ($210) exceeds the auto-approve ceiling, so it **pauses for a human**. *Approve*, or
+  *choose a different skill* from the inline marketplace. *"The model proposes, the human
+  disposes — and either way it's logged."*
+- **Budget override:** run the **weld task** on **Arm-Nova** (near-exhausted budget) →
+  **no skill fits the budget**, so it demands a **budget override**. *"The robot can't just
+  overspend — a human authorizes it, and it's flagged for finance review."*
+- **Security block:** on any run, point at the **red BLOCKED badge** in SHOP — the $8
+  unverified-vendor skill demanding unrestricted camera/motion access. *"That's the
+  malicious-skill defense."*
+
 ## If they want more
-- **Receipts tab:** *"Every run files a receipt — diagnosis, alternatives considered, net
-  saved, downtime avoided, accounting category. Finance can audit an autonomous agent."*
-- **Fleet tab:** *"Three robots, three budgets, three policies. Atlas-7 now has the
-  transparent-object-grasp capability it just bought, and its card is down."*
+- **Model pill (top-left):** *"‘gpt-4o · live’ — that's a real model call. If the API ever
+  drops, it flips to ‘offline reasoning’ and the demo keeps running on cached logic."*
+- **Marketplace tab:** *"Every buyable skill, with price, success rate, vendor
+  verification, and permissions — click one for the full spec sheet."*
+- **Receipts tab:** *"Every run files a receipt — filter by robot and **Export CSV** for
+  the expense report. Finance can audit an autonomous agent."*
+- **Fleet tab:** *"Three robots, three budgets, three policies, plus a fleet-wide
+  governance rollup — approvals, overrides, escalations at a glance."*
+
+## Presenter shortcuts
+`Enter` runs · `R` resets · `1`–`4` switch tabs — so you can drive it hands-free.
 
 ## Recovery (it won't happen, but)
 - Nothing renders? Press **↺ Reset demo**, then **▶ Run Task** again.
