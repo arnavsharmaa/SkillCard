@@ -61,6 +61,11 @@ export default function Receipts({ state }) {
   const receipts = robotFilter === 'all' ? state.receipts : state.receipts.filter((r) => r.robot.id === robotFilter);
   const totalSpent = receipts.reduce((a, r) => a + r.cost, 0);
   const totalSaved = receipts.reduce((a, r) => a + (r.netSaved || 0), 0);
+  const byCategory = receipts.reduce((acc, r) => {
+    acc[r.category] = (acc[r.category] || 0) + r.cost;
+    return acc;
+  }, {});
+  const categoryRows = Object.entries(byCategory).sort((a, b) => b[1] - a[1]);
 
   return (
     <div className="space-y-5">
@@ -75,6 +80,24 @@ export default function Receipts({ state }) {
           ⬇ Export CSV
         </button>
       </div>
+
+      {/* spend by accounting category (expense-report rollup) */}
+      {categoryRows.length > 0 && (
+        <div className="rounded-2xl border border-edge bg-panel p-4">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-muted mb-3">Spend by accounting category</div>
+          <div className="space-y-2">
+            {categoryRows.map(([cat, amount]) => (
+              <div key={cat} className="flex items-center gap-3">
+                <div className="w-52 shrink-0 text-xs text-white/85 truncate">{CATEGORY_LABEL[cat] || cat}</div>
+                <div className="flex-1 h-2 rounded-full bg-panel2 overflow-hidden">
+                  <div className="h-full bg-accent rounded-full" style={{ width: `${Math.round((amount / totalSpent) * 100)}%` }} />
+                </div>
+                <div className="w-16 shrink-0 text-right font-mono text-sm">{money(amount)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* robot filter */}
       <div className="flex flex-wrap gap-2">
