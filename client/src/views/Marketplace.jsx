@@ -16,14 +16,32 @@ const CATEGORY_LABEL = {
   navigation: 'Autonomy licensing',
 };
 
+// Check a skill against a robot's policy + remaining budget (mirrors the
+// server's policy engine) so the marketplace can show per-robot compatibility.
+function compatibilityFor(skill, robot) {
+  const p = robot.policy;
+  if (p.blockedCategories?.includes(skill.category)) return { ok: false, reason: `${skill.category} blocked` };
+  if ((skill.requiredHardware || []).length > 0) return { ok: false, reason: 'needs hardware' };
+  if (p.requireVerifiedVendor && skill.vendorVerified === false) return { ok: false, reason: 'unverified vendor' };
+  if (p.blockUnrestrictedPermissions && (skill.requestedPermissions || []).some((x) => x.includes('unrestricted')))
+    return { ok: false, reason: 'excess permissions' };
+  const missingCert = (p.requiredCertifications || []).filter((c) => !(skill.certifications || []).includes(c));
+  if (missingCert.length) return { ok: false, reason: `needs ${missingCert.join(', ')}` };
+  if (skill.price > robot.monthlyBudget - robot.spent) return { ok: 'budget', reason: 'over budget' };
+  if (skill.price > p.autoApproveCeiling) return { ok: 'flag', reason: 'needs approval' };
+  return { ok: true };
+}
+
 export default function Marketplace({ state }) {
   const skills = state.marketplace;
   const [filter, setFilter] = useState('all');
+  const [robotId, setRobotId] = useState('none');
   const [selected, setSelected] = useState(null);
 
   const capabilities = [...new Set(skills.map((s) => s.capability))];
   const vendors = [...new Set(skills.map((s) => s.vendor))];
   const shown = filter === 'all' ? skills : skills.filter((s) => s.capability === filter);
+  const activeRobot = robotId === 'none' ? null : state.robots.find((r) => r.id === robotId);
 
   // Which seeded tasks each skill is a candidate for.
   const tasksFor = (cap) => state.tasks.filter((t) => t.requiredCapability === cap);
@@ -44,6 +62,15 @@ export default function Marketplace({ state }) {
           <Chip key={c} active={filter === c} onClick={() => setFilter(c)}>
             {CAP_LABEL[c] || c}
           </Chip>
+        ))}
+      </div>
+
+      {/* compatibility filter: check each skill against a robot's policy + budget */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-[11px] uppercase tracking-wider text-muted mr-1">Compatible with</span>
+        <Chip active={robotId === 'none'} onClick={() => setRobotId('none')}>Any robot</Chip>
+        {state.robots.map((r) => (
+          <Chip key={r.id} active={robotId === r.id} onClick={() => setRobotId(r.id)}>{r.name}</Chip>
         ))}
       </div>
 
@@ -85,6 +112,20 @@ export default function Marketplace({ state }) {
               {s.category === 'teleop' && <Tag tone="warn">human</Tag>}
               {(s.requiredHardware || []).length > 0 && <Tag tone="warn">needs hardware</Tag>}
             </div>
+
+            {activeRobot && (() => {
+              const c = compatibilityFor(s, activeRobot);
+              const tone = c.ok === true ? 'accent' : c.ok === 'flag' || c.ok === 'budget' ? 'warn' : 'danger';
+              const label =
+                c.ok === true ? `✓ runs on ${activeRobot.name}` : `✕ ${c.reason} on ${activeRobot.name}`;
+              return (
+                <div className={`mt-2 border-t border-edge pt-2 text-[11px] font-mono ${
+                  tone === 'accent' ? 'text-accent' : tone === 'warn' ? 'text-warn' : 'text-danger'
+                }`}>
+                  {label}
+                </div>
+              );
+            })()}
           </button>
         ))}
       </div>
