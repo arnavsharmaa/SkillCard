@@ -57,7 +57,7 @@ function StageBody({ s }) {
           <div className="flex flex-wrap gap-2">
             <Chip tone="accent">missing: {s.missing_capability}</Chip>
             <Chip>confidence {Math.round((s.confidence || 0) * 100)}%</Chip>
-            <SourceChip source={s.source} />
+            <SourceChip source={s.source} latencyMs={s.latencyMs} />
           </div>
         </div>
       );
@@ -98,7 +98,7 @@ function StageBody({ s }) {
           <p className="text-[15px] leading-relaxed text-white">{s.text}</p>
           <div className="flex flex-wrap gap-2">
             <Chip tone="accent">chose: {s.chosen_skill?.name}</Chip>
-            <SourceChip source={s.source} />
+            <SourceChip source={s.source} latencyMs={s.latencyMs} />
           </div>
           {s.rejected?.length > 0 && (
             <div className="space-y-1 border-l-2 border-edge pl-3">
@@ -233,8 +233,16 @@ function Telemetry({ label, v, bad }) {
   );
 }
 
-function SourceChip({ source }) {
-  if (source === 'openai') return <Chip tone="accent">gpt-4o</Chip>;
+function SourceChip({ source, latencyMs }) {
+  if (source === 'openai')
+    return (
+      <span className="inline-flex items-center gap-1.5">
+        <Chip tone="accent">gpt-4o</Chip>
+        {latencyMs != null && (
+          <span className="text-[10px] font-mono text-muted">{(latencyMs / 1000).toFixed(1)}s</span>
+        )}
+      </span>
+    );
   if (source === 'fallback' || source === 'stub') return <Chip>offline reasoning</Chip>;
   return null;
 }

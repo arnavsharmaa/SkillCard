@@ -55,13 +55,14 @@ export async function diagnose(task, robot, telemetry) {
     telemetry,
   });
 
+  const t0 = Date.now();
   try {
     const data = await callJSON(system, user);
     if (!data.diagnosis || !data.missing_capability) throw new Error('bad-shape');
     if (typeof data.confidence !== 'number') data.confidence = canned.confidence;
     // Keep the missing capability aligned with the marketplace taxonomy.
     data.missing_capability = task.requiredCapability;
-    return { data, source: 'openai' };
+    return { data, source: 'openai', latencyMs: Date.now() - t0 };
   } catch (err) {
     console.error('[DIAGNOSE fallback]', err.message);
     return { data: canned, source: 'fallback' };
@@ -109,12 +110,13 @@ export async function reason(diagnosis, candidates, chosen, task, robot) {
     })),
   });
 
+  const t0 = Date.now();
   try {
     const data = await callJSON(system, user);
     if (!data.justification) throw new Error('bad-shape');
     if (!Array.isArray(data.rejected)) data.rejected = canned.rejected;
     data.chosen_skill_id = chosen.id;
-    return { data, source: 'openai' };
+    return { data, source: 'openai', latencyMs: Date.now() - t0 };
   } catch (err) {
     console.error('[REASON fallback]', err.message);
     return { data: canned, source: 'fallback' };
