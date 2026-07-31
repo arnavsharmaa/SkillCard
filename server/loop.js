@@ -74,6 +74,7 @@ export async function runTask({ task, robot, marketplace, reasoningResult, diagn
     missing_capability: dg.data.missing_capability,
     confidence: dg.data.confidence,
     source: dg.source,
+    latencyMs: dg.latencyMs,
   });
   await sleep(delayMs);
 
@@ -124,6 +125,7 @@ export async function runTask({ task, robot, marketplace, reasoningResult, diagn
     chosen_skill: chosen,
     rejected: rs.data.rejected,
     source: rs.source,
+    latencyMs: rs.latencyMs,
   });
   await sleep(delayMs);
 
