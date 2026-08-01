@@ -1,5 +1,6 @@
 import React from 'react';
 import RobotCard from '../components/RobotCard.jsx';
+import Sparkline from '../components/Sparkline.jsx';
 import { money } from '../api.js';
 
 export default function Fleet({ state }) {
@@ -17,6 +18,10 @@ export default function Fleet({ state }) {
   const overrides = byDecision('budget-override');
   const escalations = receipts.filter((r) => r.operator).length;
   const overBudgetBots = robots.filter((r) => r.spent > r.monthlyBudget).length;
+
+  // Cumulative savings across receipts, oldest → newest.
+  let cum = 0;
+  const savingsTrend = [...receipts].reverse().map((r) => (cum += r.netSaved || 0));
 
   return (
     <div className="space-y-5">
@@ -44,6 +49,17 @@ export default function Fleet({ state }) {
             ⛔ {overBudgetBots} robot{overBudgetBots > 1 ? 's' : ''} currently over budget — flagged for finance review.
           </div>
         )}
+
+        {/* cumulative savings trend */}
+        <div className="mt-4 border-t border-edge pt-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-[10px] uppercase tracking-wider text-muted">Cumulative savings</div>
+            <div className="font-mono text-sm text-accent font-bold">{money(state.totalSaved)}</div>
+          </div>
+          <div className="text-accent">
+            <Sparkline points={savingsTrend} width={640} height={48} className="w-full" />
+          </div>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
