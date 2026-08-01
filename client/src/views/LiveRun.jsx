@@ -22,6 +22,13 @@ export default function LiveRun({ state, onComplete }) {
   const task = state.tasks.find((t) => t.id === selectedTask);
   const robot = state.robots.find((r) => r.id === selectedRobot) || state.robots[0];
 
+  // Which tasks the fleet has already resolved (and how much each saved),
+  // derived from filed receipts — so the queue shows progress.
+  const resolvedByTask = state.receipts.reduce((acc, r) => {
+    acc[r.task.id] = (acc[r.task.id] || 0) + (r.netSaved || 0);
+    return acc;
+  }, {});
+
   // Follow the stream: keep the newest stage (and finally the receipt) in view
   // so the presenter never has to scroll mid-run.
   const bottomRef = useRef(null);
@@ -125,7 +132,14 @@ export default function LiveRun({ state, onComplete }) {
                   selectedTask === t.id ? 'border-accent bg-accent/5' : 'border-edge bg-panel2 hover:border-muted/40'
                 } ${running ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
-                <div className="text-sm text-white/90 leading-snug">{t.description}</div>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="text-sm text-white/90 leading-snug">{t.description}</div>
+                  {resolvedByTask[t.id] != null && (
+                    <span className="shrink-0 rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 text-[10px] font-mono text-accent whitespace-nowrap">
+                      ✓ +{money(resolvedByTask[t.id])}
+                    </span>
+                  )}
+                </div>
                 <div className="mt-1.5 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] font-mono text-muted">
                   <span className="whitespace-nowrap text-accent">{money(t.taskValue)} value</span>
                   <span className="whitespace-nowrap">· {t.difficulty}</span>
