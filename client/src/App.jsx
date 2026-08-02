@@ -100,6 +100,11 @@ export default function App() {
                 }`}
               >
                 {t.label}
+                {t.id === 'receipts' && state.receipts.length > 0 && (
+                  <span className="ml-1.5 rounded-full bg-accent/15 px-1.5 py-0.5 text-[10px] font-mono text-accent align-middle">
+                    {state.receipts.length}
+                  </span>
+                )}
                 {tab === t.id && <span className="absolute inset-x-2 -bottom-px h-0.5 bg-accent rounded-full" />}
               </button>
             ))}
