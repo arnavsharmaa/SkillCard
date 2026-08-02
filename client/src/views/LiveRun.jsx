@@ -142,7 +142,7 @@ export default function LiveRun({ state, onComplete }) {
                 </div>
                 <div className="mt-1.5 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] font-mono text-muted">
                   <span className="whitespace-nowrap text-accent">{money(t.taskValue)} value</span>
-                  <span className="whitespace-nowrap">· {t.difficulty}</span>
+                  <span className={`whitespace-nowrap ${t.difficulty === 'High' ? 'text-danger' : t.difficulty === 'Medium' ? 'text-warn' : 'text-muted'}`}>· {t.difficulty}</span>
                   <span className="whitespace-nowrap">· needs {t.requiredCapability}</span>
                 </div>
               </button>
