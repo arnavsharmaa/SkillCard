@@ -91,10 +91,11 @@ export default function App() {
         {/* tabs */}
         <div className="mx-auto max-w-7xl px-6">
           <div className="flex items-center gap-1">
-            {TABS.map((t) => (
+            {TABS.map((t, i) => (
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
+                title={`${t.label} — press ${i + 1}`}
                 className={`relative px-4 py-2.5 text-sm font-medium transition-colors ${
                   tab === t.id ? 'text-accent' : 'text-muted hover:text-white'
                 }`}
