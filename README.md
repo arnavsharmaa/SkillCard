@@ -77,6 +77,24 @@ physical world, and the robot escalates to an **approved human operator** (singl
 Operator Console). The operator takes time-boxed control, resolves the task, and access
 is revoked — with the operator charge attached to the same auditable task record.
 
+### Budget override
+
+When *every* viable skill for a task costs more than a robot's remaining budget, the run
+pauses for a human **budget override** — authorize the over-budget purchase (logged and
+flagged for finance) or leave the task unresolved.
+
+---
+
+## Feature overview
+
+- **Live Run** — one-button 8-stage loop with a live stage timeline and the hero savings counter; task-queue shows which tasks are resolved and what each saved.
+- **Marketplace** — every buyable skill with price, success rate, vendor verification, and permissions; filter by capability or by **which robot can run it**; click for a full spec sheet.
+- **Receipts** — auditable receipt per run; filter by robot, **export CSV**, and a spend-by-accounting-category breakdown.
+- **Fleet** — per-robot budgets/policies/capabilities, a fleet-wide spend-governance rollup (approvals, overrides, escalations), and a cumulative-savings sparkline.
+- **Governance** — deterministic policy engine: auto-approve ceiling, blocked categories, required certs, vendor verification, permission scoping, hardware compatibility, human approval, and budget override.
+- **Live model** — header pill + per-stage latency show whether reasoning ran on `gpt-4o` or the canned fallback.
+- **Presenter shortcuts** — `Enter` run · `R` reset · `1`–`4` tabs.
+
 ---
 
 ## How the OpenAI API is used
