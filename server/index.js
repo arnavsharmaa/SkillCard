@@ -215,6 +215,6 @@ app.get('/api/run/:taskId', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`\n  SkillCard server on http://localhost:${PORT}`);
-  console.log(`  Model: ${MODEL}  |  API key: ${process.env.OPENAI_API_KEY ? 'set' : 'MISSING (using canned fallbacks)'}\n`);
+  console.log(`\n  SkillCard  ·  API on http://localhost:${PORT}  ·  UI on http://localhost:5173`);
+  console.log(`  Model: ${MODEL}  |  API key: ${process.env.OPENAI_API_KEY ? 'set (live gpt-4o)' : 'MISSING (using canned fallbacks)'}\n`);
 });
