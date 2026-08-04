@@ -74,6 +74,11 @@ export default function Marketplace({ state }) {
         ))}
       </div>
 
+      <div className="text-[11px] font-mono text-muted">
+        showing {shown.length} of {skills.length} skills
+        {activeRobot && ` · ${shown.filter((s) => compatibilityFor(s, activeRobot).ok === true).length} run on ${activeRobot.name}`}
+      </div>
+
       {/* skill grid */}
       <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
         {shown.map((s) => (
