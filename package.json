@@ -1,7 +1,20 @@
 {
   "name": "skillcard",
   "version": "1.0.0",
-  "description": "Spend infrastructure for autonomous machines",
+  "description": "Spend infrastructure for autonomous machines — Ramp for autonomous work",
+  "author": "Arnav Sharma",
+  "license": "MIT",
+  "keywords": [
+    "fintech",
+    "spend-management",
+    "autonomous-agents",
+    "robotics",
+    "governance"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arnavsharmaa/SkillCard.git"
+  },
   "type": "module",
   "private": true,
   "scripts": {
