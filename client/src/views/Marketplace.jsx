@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { money } from '../api.js';
 
 const CAP_LABEL = {
@@ -143,6 +143,11 @@ export default function Marketplace({ state }) {
 function SkillDetail({ skill, tasks, onClose }) {
   const risk = skill.riskLevel || 'low';
   const verified = skill.vendorVerified !== false;
+  useEffect(() => {
+    const onKey = (e) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-ink/70 backdrop-blur-sm" />
