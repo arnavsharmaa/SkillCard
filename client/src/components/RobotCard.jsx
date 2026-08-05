@@ -60,6 +60,7 @@ export default function RobotCard({ robot }) {
         <Row k="Auto-approve ≤" v={money(robot.policy.autoApproveCeiling)} />
         <Row k="Blocked" v={robot.policy.blockedCategories.length ? robot.policy.blockedCategories.join(', ') : 'none'} />
         <Row k="Requires cert" v={robot.policy.requiredCertifications.length ? robot.policy.requiredCertifications.join(', ') : 'none'} />
+        <Row k="Security" v={robot.policy.requireVerifiedVendor ? 'verified vendors only' : 'open'} />
       </div>
 
       {/* spend history sparkbars */}
