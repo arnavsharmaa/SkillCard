@@ -63,8 +63,12 @@ export default function App() {
     return (
       <div className="h-full grid place-items-center text-muted">
         <div className="text-center">
-          <div className="text-2xl font-bold text-accent mb-2">SkillCard</div>
-          <div className="text-sm">Connecting to fleet…</div>
+          <div className="mx-auto mb-3 h-10 w-10 rounded-xl bg-accent text-ink grid place-items-center font-black text-xl pulse-ring">
+            S
+          </div>
+          <div className="text-2xl font-bold text-accent">SkillCard</div>
+          <div className="text-[11px] text-muted mt-0.5">Spend infrastructure for autonomous machines</div>
+          <div className="text-sm mt-3">Connecting to fleet…</div>
         </div>
       </div>
     );
