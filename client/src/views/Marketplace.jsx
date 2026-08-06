@@ -40,6 +40,7 @@ export default function Marketplace({ state }) {
 
   const capabilities = [...new Set(skills.map((s) => s.capability))];
   const vendors = [...new Set(skills.map((s) => s.vendor))];
+  const avgSuccess = skills.length ? Math.round((skills.reduce((a, s) => a + s.successRate, 0) / skills.length) * 100) : 0;
   const shown = filter === 'all' ? skills : skills.filter((s) => s.capability === filter);
   const activeRobot = robotId === 'none' ? null : state.robots.find((r) => r.id === robotId);
 
@@ -53,6 +54,7 @@ export default function Marketplace({ state }) {
         <Kpi label="Skills listed" v={skills.length} />
         <Kpi label="Vendors" v={vendors.length} />
         <Kpi label="Capabilities" v={capabilities.length} />
+        <Kpi label="Avg success" v={`${avgSuccess}%`} />
       </div>
 
       {/* capability filter */}
