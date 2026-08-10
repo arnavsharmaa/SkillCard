@@ -8,6 +8,19 @@
   color-scheme: light;
 }
 
+/* Accessibility: honor reduced-motion — keep everything legible, drop the
+   entrance animations, glows, and pulses. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* Demo-table readability: nudge the whole rem scale up on laptop screens */
 @media (min-width: 1280px) {
   html {
