@@ -154,7 +154,7 @@ function SkillDetail({ skill, tasks, onClose }) {
     <div className="fixed inset-0 z-40 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-ink/70 backdrop-blur-sm" />
       <div
-        className="relative z-10 w-full max-w-lg rounded-2xl border border-edge bg-panel overflow-hidden rise-in"
+        className="relative z-10 w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl border border-edge bg-panel rise-in"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between border-b border-edge bg-panel2 px-5 py-4">
