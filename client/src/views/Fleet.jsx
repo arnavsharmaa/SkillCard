@@ -1,7 +1,7 @@
 import React from 'react';
 import RobotCard from '../components/RobotCard.jsx';
 import Sparkline from '../components/Sparkline.jsx';
-import { money } from '../api.js';
+import { money, reviewFlag } from '../api.js';
 
 export default function Fleet({ state }) {
   const robots = state.robots;
@@ -17,6 +17,7 @@ export default function Fleet({ state }) {
   const operatorChosen = byDecision('operator-chosen');
   const overrides = byDecision('budget-override');
   const escalations = receipts.filter((r) => r.operator).length;
+  const flaggedForReview = receipts.filter((r) => reviewFlag(r)).length;
   const overBudgetBots = robots.filter((r) => r.spent > r.monthlyBudget).length;
 
   // Cumulative savings across receipts, oldest → newest.
@@ -42,7 +43,7 @@ export default function Fleet({ state }) {
           <Metric label="Human-approved" v={humanApproved} tone={humanApproved ? 'warn' : 'muted'} />
           <Metric label="Operator picks" v={operatorChosen} tone={operatorChosen ? 'warn' : 'muted'} />
           <Metric label="Budget overrides" v={overrides} tone={overrides ? 'danger' : 'muted'} />
-          <Metric label="Escalations" v={escalations} tone={escalations ? 'warn' : 'muted'} />
+          <Metric label="Flagged for review" v={flaggedForReview} tone={flaggedForReview ? 'warn' : 'muted'} />
         </div>
         {overBudgetBots > 0 && (
           <div className="mt-3 text-xs text-danger">

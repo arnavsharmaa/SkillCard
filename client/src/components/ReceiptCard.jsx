@@ -1,5 +1,5 @@
 import React from 'react';
-import { money } from '../api.js';
+import { money, reviewFlag } from '../api.js';
 
 const CATEGORY_LABEL = {
   perception: 'Software / Perception Licensing',
@@ -32,6 +32,17 @@ export default function ReceiptCard({ r, fresh }) {
             </div>
           </div>
         </div>
+
+        {(() => {
+          const flag = reviewFlag(r);
+          if (!flag) return null;
+          const c = flag.level === 'danger' ? 'border-danger/40 bg-danger/5 text-danger' : 'border-warn/40 bg-warn/10 text-warn';
+          return (
+            <div className={`mx-5 mt-3 rounded-lg border px-3 py-2 text-xs font-medium ${c}`}>
+              ⚑ Flagged for review — {flag.reason}
+            </div>
+          );
+        })()}
 
         <div className="px-5 divide-y divide-dashed divide-edge">
           {/* who / what */}

@@ -75,3 +75,14 @@ export async function authorizeOverride(receiptId) {
 
 export const money = (n) =>
   (n < 0 ? '-$' : '$') + Math.abs(Math.round(n)).toLocaleString('en-US');
+
+// Spend alerts: does a receipt warrant a human finance review? Returns a short
+// reason (with a severity) or null. Auto-approved, in-budget purchases don't.
+export function reviewFlag(r) {
+  if (r.approvedBy === 'budget-override') return { reason: 'Budget override — spent beyond the monthly budget', level: 'danger' };
+  if (r.operator) return { reason: 'Escalated to a human operator', level: 'warn' };
+  if (r.approvedBy === 'human-approved') return { reason: 'Approved over the auto-approve ceiling', level: 'warn' };
+  if (r.approvedBy === 'operator-chosen') return { reason: 'Operator overrode the agent’s choice', level: 'warn' };
+  if (r.taskValue && r.cost > r.taskValue * 0.3) return { reason: 'High cost relative to task value', level: 'warn' };
+  return null;
+}
