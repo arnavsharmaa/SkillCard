@@ -100,6 +100,7 @@ export default function App() {
                 key={t.id}
                 onClick={() => setTab(t.id)}
                 title={`${t.label} — press ${i + 1}`}
+                aria-current={tab === t.id ? 'page' : undefined}
                 className={`relative px-4 py-2.5 text-sm font-medium transition-colors ${
                   tab === t.id ? 'text-accent' : 'text-muted hover:text-white'
                 }`}
