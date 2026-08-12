@@ -6,3 +6,9 @@ build/
 .DS_Store
 *.log
 .vite/
+
+# editor / OS
+.vscode/
+.idea/
+*.swp
+Thumbs.db
