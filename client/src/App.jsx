@@ -18,6 +18,7 @@ export default function App() {
   const [tab, setTab] = useState('live');
   const [state, setState] = useState(null);
   const [health, setHealth] = useState(null);
+  const [connectError, setConnectError] = useState(false);
   const [resetCount, setResetCount] = useState(0);
 
   const refresh = useCallback(async () => {
@@ -25,14 +26,24 @@ export default function App() {
       const [s, h] = await Promise.all([getState(), getHealth()]);
       setState(s);
       setHealth(h);
+      setConnectError(false);
     } catch (_) {
-      // Server not up yet — keep prior state, never crash.
+      // Server not up yet — surface a retry state, never crash.
+      setConnectError(true);
     }
   }, []);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  // Until the first load succeeds, keep retrying so the app self-heals once the
+  // server comes up (e.g. started a moment after the client).
+  useEffect(() => {
+    if (state) return;
+    const id = setInterval(refresh, 3000);
+    return () => clearInterval(id);
+  }, [state, refresh]);
 
   const handleReset = useCallback(async () => {
     await resetState();
@@ -68,7 +79,20 @@ export default function App() {
           </div>
           <div className="text-2xl font-bold text-accent">SkillCard</div>
           <div className="text-[11px] text-muted mt-0.5">Spend infrastructure for autonomous machines</div>
-          <div className="text-sm mt-3">Connecting to fleet…</div>
+          {connectError ? (
+            <div className="mt-3">
+              <div className="text-sm text-warn">Can't reach the server.</div>
+              <div className="text-xs text-muted mt-0.5">Make sure it's running (npm run dev) — retrying…</div>
+              <button
+                onClick={refresh}
+                className="mt-3 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-ink hover:brightness-110 transition"
+              >
+                ↻ Retry now
+              </button>
+            </div>
+          ) : (
+            <div className="text-sm mt-3">Connecting to fleet…</div>
+          )}
         </div>
       </div>
     );
