@@ -140,10 +140,10 @@ export default function App() {
             ))}
             <button
               onClick={handleReset}
-              title="Reset demo — press R"
+              title="Reset sample data — press R"
               className="ml-auto text-xs font-mono text-muted hover:text-white border border-edge rounded px-3 py-1.5"
             >
-              ↺ Reset demo
+              ↺ Reset
             </button>
           </div>
         </div>

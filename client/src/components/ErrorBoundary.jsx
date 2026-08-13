@@ -26,7 +26,7 @@ export default class ErrorBoundary extends React.Component {
               S
             </div>
             <div className="text-xl font-bold text-accent mb-1">SkillCard hit a snag</div>
-            <p className="text-sm text-muted mb-4">A reload picks up right where the demo left off.</p>
+            <p className="text-sm text-muted mb-4">A reload picks up right where you left off.</p>
             <button
               onClick={() => window.location.reload()}
               className="rounded-lg bg-accent px-4 py-2 font-semibold text-ink hover:brightness-110 transition"
