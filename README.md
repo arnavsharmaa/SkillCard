@@ -1,161 +1,159 @@
 # SkillCard
 
-**Governed spending for autonomous machines. Ramp for autonomous work.**
+**Governed spending for autonomous machines.**
 
-SkillCard gives robots **delegated purchasing authority** so they can resolve
-operational failures without giving up enterprise control. Each robot gets a virtual
-card, a budget, and a written spend policy. When a robot fails a task because it lacks a
-capability, an autonomous agent diagnoses the failure, shops a marketplace of
-purchasable skills, reasons about the economics, and proposes a purchase — which a
-deterministic **policy engine** then approves, flags, or blocks. On approval it buys the
-skill, retries the task, and emits a receipt proving why the money was spent and what it
-saved.
+SkillCard is a spend-governance platform for autonomous machines and agents. When a robot
+hits a task it can't complete, it can acquire the missing capability from a marketplace of
+purchasable skills — but every purchase runs through a deterministic **policy engine** the
+business controls: spending limits, approved vendors, permission scoping, certification
+requirements, human-approval thresholds, and budget overrides. Every purchase produces an
+auditable receipt tying the money spent to the outcome it bought.
 
-**The robot never owns the card or makes unrestricted decisions.** The business defines
-the spending limits, approved vendors, permission requirements, and human-approval
-thresholds, and retains ownership and liability. The robot proposes and executes
-purchases *under delegated authority*.
+**The robot proposes; policy disposes; the business keeps ownership and liability.** A
+robot never owns the card or makes unrestricted decisions — it operates under delegated
+purchasing authority within limits a human defines.
 
-There is no physical robot. Everything robotic is simulated with seeded, deterministic
-outcomes. **The product is the financial governance layer, not the robotics.**
+The autonomous-machine side is driven by a deterministic **simulation harness** (seeded
+telemetry and outcomes), so the full loop can be exercised without physical hardware.
+SkillCard itself is the financial-governance layer, not the robotics.
 
 ---
 
-## Setup (three commands)
+## Why
 
-```bash
-cp .env.example .env      # optional: paste an OPENAI_API_KEY (works without one)
-npm run install:all       # installs root + client deps
-npm run dev               # server on :3001, client on :5173
-```
-
-Then open **http://localhost:5173** and press **Run Task**.
-
-> No key? No problem. The app ships with realistic canned reasoning and runs the full
-> loop end-to-end offline. Add a key to `.env` to see live `gpt-4o` diagnosis and
-> reasoning. Set `RUN_STUBBED=1` to force offline mode even with a key.
-
-No database, no auth, no deploy. State lives in a plain JS object on the server and
-resets on restart (or via the **Reset demo** button).
+As machines and agents begin making operational decisions, they need the same financial
+guardrails employees already have — cards with limits, approval workflows, receipts, and
+an audit trail. SkillCard is that layer for autonomous work: it lets a machine resolve an
+exception on its own **without** handing it unchecked spending power.
 
 ---
 
-## The core loop
+## How it works
 
-Pressing **Run Task** streams eight stages to the UI over Server-Sent Events:
+Running a task streams eight stages to the UI over Server-Sent Events:
 
 | # | Stage | What happens |
 |---|-----------|--------------|
-| 1 | ATTEMPT | Robot tries the task and fails deterministically. Fake telemetry (grasp force, depth confidence, retries, error code). |
-| 2 | DIAGNOSE | **OpenAI call** → plain-language explanation of *why* it failed. |
+| 1 | ATTEMPT | Robot tries the task and fails deterministically. Telemetry (grasp force, depth confidence, retries, error code). |
+| 2 | DIAGNOSE | **AI call** → plain-language explanation of *why* it failed. |
 | 3 | SHOP | Filter the marketplace to skills that provide the missing capability. |
-| 4 | REASON | **OpenAI call** → picks the best skill on expected value, with rejection reasons for every alternative. |
-| 5 | POLICY | **Deterministic code.** Auto-approve, flag, or hard-block. If blocked, fall back to the next-best candidate (visible in the UI). |
-| 6 | PURCHASE | Deduct from the robot's card, install the capability, record the transaction. |
-| 7 | RETRY | Task succeeds. |
+| 4 | REASON | **AI call** → picks the best skill on expected value, with a reason every alternative lost. |
+| 5 | POLICY | **Deterministic engine.** Auto-approve, flag for human approval, hard-block, or require a budget override. On a block it falls back to the next-best candidate. |
+| 6 | PURCHASE | Charge the robot's card, install the capability, record the transaction. |
+| 7 | RETRY | Task succeeds (or escalates to a human operator). |
 | 8 | RECEIPT | Emit an itemized, auditable receipt. |
 
-**The model proposes, policy disposes.** The agent optimizes pure expected value; the
-deterministic policy engine is what actually authorizes (or blocks) the spend.
+The agent optimizes pure expected value (`success_rate × task_value − price`); the
+deterministic policy engine is what actually authorizes or blocks the spend.
 
-### Governance the policy engine enforces (all deterministic)
+### Governance model
 
-- **Auto-approve ceiling** — purchases under the per-transaction limit clear automatically; over it, they're **flagged for human approval**.
+All governance is deterministic code, not the model:
+
+- **Auto-approve ceiling** — purchases under the per-transaction limit clear automatically; over it, they're flagged for human approval.
 - **Blocked categories** — e.g. a fully autonomous unit blocks human teleop.
 - **Required certifications** — e.g. SOC2.
 - **Vendor verification** — skills from unverified vendors are hard-blocked.
-- **Permission scoping** — a skill demanding *unrestricted* camera/motion access is hard-blocked (the "malicious skill" defense).
+- **Permission scoping** — a skill demanding *unrestricted* camera/motion access is hard-blocked.
 - **Hardware compatibility** — skills needing hardware the robot lacks are rejected.
+- **Budget override** — when every viable skill exceeds a robot's remaining budget, the run pauses for an explicit human override (logged and flagged for finance).
+- **Human-in-the-loop escalation** — if a purchased skill underperforms, the robot escalates to an approved, time-boxed human operator; the operator charge is attached to the same task record.
 
-The marketplace stage shows a **compatible / needs-approval / blocked** badge on every
-candidate, so governance is visible at a glance.
-
-### Human-in-the-loop escalation
-
-Toggle **Simulate skill failure** before a run: the purchased skill underperforms in the
-physical world, and the robot escalates to an **approved human operator** (single-laptop
-Operator Console). The operator takes time-boxed control, resolves the task, and access
-is revoked — with the operator charge attached to the same auditable task record.
-
-### Budget override
-
-When *every* viable skill for a task costs more than a robot's remaining budget, the run
-pauses for a human **budget override** — authorize the over-budget purchase (logged and
-flagged for finance) or leave the task unresolved.
+The marketplace shows a **compatible / needs-approval / blocked** badge on every candidate,
+and every receipt that needs a human look (override, escalation, over-ceiling approval,
+high cost-to-value) is automatically **flagged for review**.
 
 ---
 
-## Feature overview
+## Features
 
-- **Live Run** — one-button 8-stage loop with a live stage timeline and the hero savings counter; task-queue shows which tasks are resolved and what each saved.
-- **Marketplace** — every buyable skill with price, success rate, vendor verification, and permissions; filter by capability or by **which robot can run it**; click for a full spec sheet.
-- **Receipts** — auditable receipt per run; filter by robot, **export CSV**, and a spend-by-accounting-category breakdown.
-- **Fleet** — per-robot budgets/policies/capabilities, a fleet-wide spend-governance rollup (approvals, overrides, escalations), and a cumulative-savings sparkline.
-- **Governance** — deterministic policy engine: auto-approve ceiling, blocked categories, required certs, vendor verification, permission scoping, hardware compatibility, human approval, and budget override.
-- **Live model** — header pill + per-stage latency show whether reasoning ran on `gpt-4o` or the canned fallback.
-- **Presenter shortcuts** — `Enter` run · `R` reset · `1`–`4` tabs.
-
----
-
-## How the OpenAI API is used
-
-Two calls, both `gpt-4o` (one constant, `MODEL` in [`server/openai.js`](server/openai.js)),
-both with `response_format: { type: 'json_object' }` for strict JSON, both wrapped in
-`try/catch` with a hardcoded realistic fallback so the demo can never break. Fallbacks
-are logged to the server console only — never to the UI.
-
-### Call 1 — DIAGNOSE (`diagnose()`)
-- **Input:** the task description, the robot's installed capabilities, and the fake
-  telemetry from the failed attempt.
-- **System prompt:** acts as a robotics reliability engineer explaining a failure to a
-  colleague in one or two plain sentences — not a template.
-- **Output JSON:** `{ diagnosis, missing_capability, confidence }`.
-- The UI renders `diagnosis` verbatim in the DIAGNOSE stage.
-
-### Call 2 — REASON (`reason()`)
-- **Input:** the diagnosis, the 3–4 candidate skills (price, pricing model, success
-  rate, hardware, certs, category), the task value, the human baseline cost, and the
-  robot's policy.
-- **System prompt:** acts as a procurement agent optimizing **expected value**
-  (`success_rate × task_value − price`). It is explicitly told *not* to enforce policy
-  itself — a separate downstream engine does that — and to give a concrete reason every
-  rejected option lost.
-- **Output JSON:** `{ chosen_skill_id, justification, rejected: [{ skill_id, reason }] }`.
-- The UI renders `justification` and the `rejected` list in the REASON stage.
-
-If either call fails (no key, network error, malformed JSON, or a chosen id that isn't
-in the candidate set), the code falls back to a deterministic canned response that still
-references the real skills and prices, so the on-screen reasoning always stays coherent.
+- **Live Run** — the eight-stage loop with a streaming timeline and a running savings counter; the task queue marks which tasks are resolved and what each saved.
+- **Marketplace** — every purchasable skill with price, success rate, vendor verification, and requested permissions; filter by capability or by **which robot can run it**; open any skill for a full spec sheet.
+- **Receipts** — an auditable receipt per purchase; filter by robot, **export to CSV**, and a spend-by-accounting-category breakdown. Receipts needing attention are flagged for review.
+- **Fleet** — per-robot budgets, policies, and installed capabilities; a fleet-wide governance rollup (approvals, overrides, escalations, flags) and a cumulative-savings trend.
+- **Live model status** — a header pill and per-stage latency show whether reasoning ran on the live model or the deterministic fallback.
+- **Keyboard shortcuts** — `Enter` runs, `R` resets, `1`–`4` switch views.
 
 ---
 
-## Project structure
+## Reasoning (AI)
+
+Two calls (model name is a single constant, `MODEL` in [`server/openai.js`](server/openai.js)),
+both using strict JSON output and each wrapped in `try/catch` with a deterministic,
+realistic fallback so on-screen reasoning never fails visibly (fallbacks are logged
+server-side only). The app runs the full loop with or without an API key.
+
+- **DIAGNOSE** — input: task, the robot's installed capabilities, and the failure telemetry. Output: `{ diagnosis, missing_capability, confidence }`.
+- **REASON** — input: the diagnosis, the candidate skills (price, success rate, hardware, certs, category), the task value, the human baseline, and the robot policy. The model articulates the highest-expected-value choice and why each alternative lost; it does **not** enforce policy. Output: `{ justification, rejected: [{ skill_id, reason }] }`.
+
+The purchase *decision* is deterministic (highest expected value); the model's job is to
+explain it. Set `OPENAI_API_KEY` in `.env` for live reasoning, or `RUN_STUBBED=1` to force
+the deterministic path.
+
+---
+
+## Getting started
+
+```bash
+cp .env.example .env      # optional: paste an OPENAI_API_KEY (runs without one)
+npm run install:all       # installs root + client deps
+npm run dev               # API on :3001, client on :5173
+```
+
+Open **http://localhost:5173**. State lives in memory on the server and reseeds on restart
+(or via the in-app reset). No database, no auth.
+
+---
+
+## Architecture
 
 ```
 server/
-  index.js       Express + in-memory state + SSE run stream + operator endpoint
-  seed.js        Robots, tasks, marketplace (all seeded in code)
-  loop.js        The 8-stage loop + deterministic policy engine + escalation
-  openai.js      The two gpt-4o calls (strict JSON, try/catch)
-  fallbacks.js   Canned diagnosis + reasoning + telemetry
-client/
-  src/
-    App.jsx           Shell: pinned savings counter + tabs
-    views/            LiveRun, Receipts, Fleet
-    components/       StageTimeline, ReceiptCard, RobotCard, SavingsCounter, OperatorConsole
-    api.js            SSE client + operator finalize + money formatter
+  index.js       Express + in-memory state + SSE run stream + decision endpoints
+  seed.js        Robots, tasks, and the skill marketplace
+  loop.js        The stage loop, deterministic policy engine, escalation & override
+  openai.js      The two model calls (strict JSON, try/catch)
+  fallbacks.js   Deterministic diagnosis / reasoning / telemetry
+client/src/
+  App.jsx           Shell: savings counter, model status, tabs, connection retry
+  views/            LiveRun · Marketplace · Receipts · Fleet
+  components/        StageTimeline, ReceiptCard, RobotCard, RobotAvatar, SavingsCounter,
+                     ModelStatus, OperatorConsole, ApprovalModal, OverrideModal,
+                     Sparkline, ErrorBoundary
+  api.js            SSE client, decision calls, spend-alert helper, formatters
 ```
 
-### Key endpoints (all local, no deploy)
+### API
 
 | Endpoint | Purpose |
 |---|---|
+| `GET /api/health` | model name, whether a key is set, and the last reasoning source |
 | `GET /api/state` | robots, tasks, marketplace, receipts, total saved |
-| `GET /api/run/:taskId?robotId=&fail=1` | the core loop, streamed stage-by-stage over SSE (`fail=1` forces escalation) |
-| `POST /api/operator/:escalationId` | finalizes an escalated task after the human operator resolves it |
-| `POST /api/reset` | resets in-memory state |
+| `GET /api/run/:taskId?robotId=&fail=1` | the loop, streamed stage-by-stage over SSE |
+| `POST /api/approve/:receiptId` | approve a flagged (over-ceiling) purchase |
+| `POST /api/skill-choice/:receiptId` | buy a different skill for a flagged purchase |
+| `POST /api/override/:receiptId` | authorize an over-budget purchase |
+| `POST /api/operator/:escalationId` | finalize an escalated task after a human resolves it |
+| `POST /api/reset` | reseed in-memory state |
 
-## Tech stack
+### Tech stack
 
-Vite + React + Tailwind (client) · Node + Express (server) · `openai` npm package ·
-`concurrently` for one-command dev · in-memory state, no DB, no auth.
+Vite + React + Tailwind (client) · Node + Express (server) · the official `openai`
+package · `concurrently` for one-command dev · in-memory state.
+
+---
+
+## Roadmap
+
+- Finance **approval inbox** — a queue of everything flagged for review, with one-click approve/deny.
+- **Persistent storage** and real fleet/vendor accounts (currently in-memory, reseeded on restart).
+- **Settlement integration** — real card issuance and batched vendor payouts.
+- Expanded **anomaly detection** on spend patterns.
+- Multi-tenant fleets and role-based access for operators, approvers, and admins.
+
+## Status
+
+Reference implementation: a deterministic robotics simulation in front of a real spend-
+governance layer. The governance engine, marketplace, approval/override/escalation flows,
+receipts, and audit rollups are the product; the robotics is simulated so the loop can be
+exercised end-to-end without hardware.
