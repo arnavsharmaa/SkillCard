@@ -44,7 +44,16 @@ app.get('/api/state', (_req, res) => {
 
 app.get('/api/receipts', (_req, res) => res.json(state.receipts));
 
-// ---- Reset (handy between demo runs) --------------------------------------
+// ---- Finance review: acknowledge a flagged receipt ------------------------
+app.post('/api/receipts/:id/acknowledge', (req, res) => {
+  const receipt = state.receipts.find((r) => r.id === req.params.id);
+  if (!receipt) return res.status(404).json({ error: 'Receipt not found.' });
+  receipt.acknowledged = true;
+  receipt.acknowledgedAt = '2026-08-14';
+  res.json({ ok: true, receipt });
+});
+
+// ---- Reset ----------------------------------------------------------------
 app.post('/api/reset', (_req, res) => {
   state.robots = seedRobots();
   state.tasks = seedTasks();
