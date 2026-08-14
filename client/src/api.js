@@ -73,6 +73,13 @@ export async function authorizeOverride(receiptId) {
   return r.json();
 }
 
+// Finance acknowledges a flagged receipt (clears it from the review queue).
+export async function acknowledgeReceipt(receiptId) {
+  const r = await fetch(`/api/receipts/${receiptId}/acknowledge`, { method: 'POST' });
+  if (!r.ok) throw new Error('acknowledge failed');
+  return r.json();
+}
+
 export const money = (n) =>
   (n < 0 ? '-$' : '$') + Math.abs(Math.round(n)).toLocaleString('en-US');
 

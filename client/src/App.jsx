@@ -6,11 +6,14 @@ import LiveRun from './views/LiveRun.jsx';
 import Receipts from './views/Receipts.jsx';
 import Fleet from './views/Fleet.jsx';
 import Marketplace from './views/Marketplace.jsx';
+import Review from './views/Review.jsx';
+import { reviewFlag } from './api.js';
 
 const TABS = [
   { id: 'live', label: 'Live Run' },
   { id: 'marketplace', label: 'Marketplace' },
   { id: 'receipts', label: 'Receipts' },
+  { id: 'review', label: 'Review' },
   { id: 'fleet', label: 'Fleet' },
 ];
 
@@ -60,11 +63,9 @@ export default function App() {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.target.matches?.('input, textarea, select, [contenteditable]')) return;
       const k = e.key.toLowerCase();
-      if (k === 'r') handleReset();
-      else if (k === '1') setTab('live');
-      else if (k === '2') setTab('marketplace');
-      else if (k === '3') setTab('receipts');
-      else if (k === '4') setTab('fleet');
+      if (k === 'r') return handleReset();
+      const n = parseInt(e.key, 10);
+      if (n >= 1 && n <= TABS.length) setTab(TABS[n - 1].id);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -97,6 +98,8 @@ export default function App() {
       </div>
     );
   }
+
+  const pendingReviewCount = state.receipts.filter((r) => reviewFlag(r) && !r.acknowledged).length;
 
   return (
     <div className="min-h-full flex flex-col">
@@ -135,6 +138,11 @@ export default function App() {
                     {state.receipts.length}
                   </span>
                 )}
+                {t.id === 'review' && pendingReviewCount > 0 && (
+                  <span className="ml-1.5 rounded-full bg-warn/15 px-1.5 py-0.5 text-[10px] font-mono text-warn align-middle">
+                    {pendingReviewCount}
+                  </span>
+                )}
                 {tab === t.id && <span className="absolute inset-x-2 -bottom-px h-0.5 bg-accent rounded-full" />}
               </button>
             ))}
@@ -153,6 +161,7 @@ export default function App() {
         {tab === 'live' && <LiveRun key={resetCount} state={state} onComplete={refresh} />}
         {tab === 'marketplace' && <Marketplace state={state} />}
         {tab === 'receipts' && <Receipts state={state} />}
+        {tab === 'review' && <Review state={state} onComplete={refresh} />}
         {tab === 'fleet' && <Fleet state={state} />}
       </main>
     </div>
