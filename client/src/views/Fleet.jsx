@@ -17,7 +17,7 @@ export default function Fleet({ state }) {
   const operatorChosen = byDecision('operator-chosen');
   const overrides = byDecision('budget-override');
   const escalations = receipts.filter((r) => r.operator).length;
-  const flaggedForReview = receipts.filter((r) => reviewFlag(r)).length;
+  const flaggedForReview = receipts.filter((r) => reviewFlag(r) && !r.acknowledged).length;
   const overBudgetBots = robots.filter((r) => r.spent > r.monthlyBudget).length;
 
   // Cumulative savings across receipts, oldest → newest.
