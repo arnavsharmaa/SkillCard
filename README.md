@@ -70,6 +70,7 @@ high cost-to-value) is automatically **flagged for review**.
 - **Live Run** — the eight-stage loop with a streaming timeline and a running savings counter; the task queue marks which tasks are resolved and what each saved.
 - **Marketplace** — every purchasable skill with price, success rate, vendor verification, and requested permissions; filter by capability or by **which robot can run it**; open any skill for a full spec sheet.
 - **Receipts** — an auditable receipt per purchase; filter by robot, **export to CSV**, and a spend-by-accounting-category breakdown. Receipts needing attention are flagged for review.
+- **Review** — a finance inbox that queues every flagged purchase (override, escalation, over-ceiling approval, high cost-to-value) for a human to acknowledge, with a live pending count.
 - **Fleet** — per-robot budgets, policies, and installed capabilities; a fleet-wide governance rollup (approvals, overrides, escalations, flags) and a cumulative-savings trend.
 - **Live model status** — a header pill and per-stage latency show whether reasoning ran on the live model or the deterministic fallback.
 - **Keyboard shortcuts** — `Enter` runs, `R` resets, `1`–`4` switch views.
@@ -145,7 +146,6 @@ package · `concurrently` for one-command dev · in-memory state.
 
 ## Roadmap
 
-- Finance **approval inbox** — a queue of everything flagged for review, with one-click approve/deny.
 - **Persistent storage** and real fleet/vendor accounts (currently in-memory, reseeded on restart).
 - **Settlement integration** — real card issuance and batched vendor payouts.
 - Expanded **anomaly detection** on spend patterns.
