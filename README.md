@@ -69,11 +69,12 @@ high cost-to-value) is automatically **flagged for review**.
 
 - **Live Run** — the eight-stage loop with a streaming timeline and a running savings counter; the task queue marks which tasks are resolved and what each saved.
 - **Marketplace** — every purchasable skill with price, success rate, vendor verification, and requested permissions; filter by capability or by **which robot can run it**; open any skill for a full spec sheet.
-- **Receipts** — an auditable receipt per purchase; filter by robot, **export to CSV**, and a spend-by-accounting-category breakdown. Receipts needing attention are flagged for review.
+- **Receipts** — an auditable receipt per purchase; filter by robot, **export to CSV**, a spend-by-accounting-category breakdown, and **vendor payables with one-run batch settlement**. Receipts needing attention are flagged for review.
 - **Review** — a finance inbox that queues every flagged purchase (override, escalation, over-ceiling approval, high cost-to-value) for a human to acknowledge, with a live pending count.
-- **Fleet** — per-robot budgets, policies, and installed capabilities; a fleet-wide governance rollup (approvals, overrides, escalations, flags) and a cumulative-savings trend.
+- **Fleet** — per-robot budgets, policies, and installed capabilities; a fleet-wide governance rollup, a cumulative-savings trend, and **cross-receipt spend-anomaly detection** (vendor concentration, redundant spend, repeated overrides).
+- **Persistence** — fleet and receipt state is written to disk and survives restarts.
 - **Live model status** — a header pill and per-stage latency show whether reasoning ran on the live model or the deterministic fallback.
-- **Keyboard shortcuts** — `Enter` runs, `R` resets, `1`–`4` switch views.
+- **Keyboard shortcuts** — `Enter` runs, `R` resets, `1`–`5` switch views.
 
 ---
 
@@ -110,18 +111,19 @@ Open **http://localhost:5173**. State lives in memory on the server and reseeds 
 
 ```
 server/
-  index.js       Express + in-memory state + SSE run stream + decision endpoints
+  index.js       Express + SSE run stream + decision/settlement endpoints
   seed.js        Robots, tasks, and the skill marketplace
   loop.js        The stage loop, deterministic policy engine, escalation & override
   openai.js      The two model calls (strict JSON, try/catch)
   fallbacks.js   Deterministic diagnosis / reasoning / telemetry
+  store.js       File-backed state persistence
 client/src/
   App.jsx           Shell: savings counter, model status, tabs, connection retry
-  views/            LiveRun · Marketplace · Receipts · Fleet
+  views/            LiveRun · Marketplace · Receipts · Review · Fleet
   components/        StageTimeline, ReceiptCard, RobotCard, RobotAvatar, SavingsCounter,
                      ModelStatus, OperatorConsole, ApprovalModal, OverrideModal,
                      Sparkline, ErrorBoundary
-  api.js            SSE client, decision calls, spend-alert helper, formatters
+  api.js            SSE client, decision calls, spend-alert & anomaly helpers, formatters
 ```
 
 ### API
@@ -135,7 +137,9 @@ client/src/
 | `POST /api/skill-choice/:receiptId` | buy a different skill for a flagged purchase |
 | `POST /api/override/:receiptId` | authorize an over-budget purchase |
 | `POST /api/operator/:escalationId` | finalize an escalated task after a human resolves it |
-| `POST /api/reset` | reseed in-memory state |
+| `POST /api/receipts/:id/acknowledge` | clear a flagged receipt from the review queue |
+| `POST /api/settle` | batch all unsettled charges into per-vendor payouts |
+| `POST /api/reset` | reseed state |
 
 ### Tech stack
 
@@ -146,14 +150,14 @@ package · `concurrently` for one-command dev · in-memory state.
 
 ## Roadmap
 
-- **Persistent storage** and real fleet/vendor accounts (currently in-memory, reseeded on restart).
-- **Settlement integration** — real card issuance and batched vendor payouts.
-- Expanded **anomaly detection** on spend patterns.
-- Multi-tenant fleets and role-based access for operators, approvers, and admins.
+- **Real settlement rails** — actual card issuance and vendor payouts (settlement is currently modeled in-app, not connected to a payment processor).
+- **Database-backed storage** and real fleet/vendor accounts (state currently persists to a local JSON file).
+- **Multi-tenant fleets and role-based access** for operators, approvers, and admins.
 
 ## Status
 
-Reference implementation: a deterministic robotics simulation in front of a real spend-
-governance layer. The governance engine, marketplace, approval/override/escalation flows,
-receipts, and audit rollups are the product; the robotics is simulated so the loop can be
-exercised end-to-end without hardware.
+Working reference implementation: a deterministic robotics simulation in front of a real
+spend-governance layer, with file-backed persistence. The governance engine, marketplace,
+approval / override / escalation flows, receipts, review inbox, batch settlement, and
+anomaly detection are the product; the robotics is simulated so the loop can be exercised
+end-to-end without hardware.
