@@ -1,5 +1,5 @@
-// SkillCard server — Express + in-memory state + SSE stream for the core loop.
-// No DB, no auth, no persistence. State resets on restart.
+// SkillCard server — Express + SSE stream for the core loop, with lightweight
+// file persistence so state survives restarts. No auth.
 
 import 'dotenv/config';
 import express from 'express';
@@ -7,6 +7,7 @@ import cors from 'cors';
 import { seedRobots, seedTasks, seedMarketplace } from './seed.js';
 import { runTask, resolveWithOperator, finalizePurchase } from './loop.js';
 import { MODEL } from './openai.js';
+import { loadState, saveState } from './store.js';
 
 const app = express();
 app.use(cors());
@@ -26,6 +27,13 @@ const state = {
   generation: 0, // bumped on reset; a run started before a reset is discarded
   lastSource: null, // 'openai' | 'fallback' | 'stub' — how the last run reasoned
 };
+
+// Rehydrate the durable slice from disk if we've run before.
+const persisted = loadState();
+if (persisted) Object.assign(state, persisted);
+
+// Persist the durable slice after any mutation.
+const persist = () => saveState(state);
 
 // ---- Read endpoints -------------------------------------------------------
 app.get('/api/health', (_req, res) =>
@@ -50,6 +58,7 @@ app.post('/api/receipts/:id/acknowledge', (req, res) => {
   if (!receipt) return res.status(404).json({ error: 'Receipt not found.' });
   receipt.acknowledged = true;
   receipt.acknowledgedAt = '2026-08-14';
+  persist();
   res.json({ ok: true, receipt });
 });
 
@@ -64,6 +73,7 @@ app.post('/api/reset', (_req, res) => {
   state.pendingApprovals = {};
   state.generation += 1; // any run started before now is now stale
   state.lastSource = null;
+  persist();
   res.json({ ok: true });
 });
 
@@ -85,6 +95,7 @@ function applyFinalize(res, receiptId, chosenId, approvedBy) {
   state.receipts.unshift(receipt);
   state.totalSaved += netSaved;
   delete state.pendingApprovals[receiptId];
+  persist();
   res.json({ receipt, netSaved, stages, totalSaved: state.totalSaved, robot });
 }
 
@@ -116,6 +127,7 @@ app.post('/api/operator/:escalationId', (req, res) => {
   state.receipts.unshift(receipt);
   state.totalSaved += netSaved;
   delete state.pendingEscalations[req.params.escalationId];
+  persist();
   res.json({ receipt, netSaved, totalSaved: state.totalSaved, robot });
 });
 
@@ -210,6 +222,7 @@ app.get('/api/run/:taskId', async (req, res) => {
       state.receipts.unshift(result.receipt);
       state.totalSaved += result.netSaved;
     }
+    persist();
     send('done', {
       purchased: result.purchased,
       totalSaved: state.totalSaved,
