@@ -1,7 +1,7 @@
 import React from 'react';
 import RobotCard from '../components/RobotCard.jsx';
 import Sparkline from '../components/Sparkline.jsx';
-import { money, reviewFlag } from '../api.js';
+import { money, reviewFlag, detectAnomalies } from '../api.js';
 
 export default function Fleet({ state }) {
   const robots = state.robots;
@@ -23,6 +23,8 @@ export default function Fleet({ state }) {
   // Cumulative savings across receipts, oldest → newest.
   let cum = 0;
   const savingsTrend = [...receipts].reverse().map((r) => (cum += r.netSaved || 0));
+
+  const anomalies = detectAnomalies(receipts);
 
   return (
     <div className="space-y-5">
@@ -62,6 +64,19 @@ export default function Fleet({ state }) {
           </div>
         </div>
       </div>
+
+      {anomalies.length > 0 && (
+        <div className="rounded-2xl border border-warn/40 bg-warn/5 p-4">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-warn/80 mb-2">Spend anomalies</div>
+          <ul className="space-y-1.5">
+            {anomalies.map((a, i) => (
+              <li key={i} className={`text-sm ${a.level === 'danger' ? 'text-danger' : 'text-warn'}`}>
+                ⚠ {a.message}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
         {robots.map((r) => (

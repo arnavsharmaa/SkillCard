@@ -90,6 +90,37 @@ export async function runSettlement() {
 export const money = (n) =>
   (n < 0 ? '-$' : '$') + Math.abs(Math.round(n)).toLocaleString('en-US');
 
+// Cross-receipt anomaly detection — spend patterns a single receipt can't show.
+export function detectAnomalies(receipts) {
+  const out = [];
+  const total = receipts.reduce((a, r) => a + r.cost, 0);
+
+  // Vendor concentration: one vendor dominating fleet spend.
+  if (total > 0 && receipts.length >= 3) {
+    const byVendor = {};
+    receipts.forEach((r) => (byVendor[r.skill.vendor] = (byVendor[r.skill.vendor] || 0) + r.cost));
+    const [vendor, amount] = Object.entries(byVendor).sort((a, b) => b[1] - a[1])[0];
+    if (amount / total > 0.5) {
+      out.push({ level: 'warn', message: `${vendor} is ${Math.round((amount / total) * 100)}% of fleet spend — vendor concentration.` });
+    }
+  }
+
+  // Redundant purchases: the same skill bought more than once.
+  const bySkill = {};
+  receipts.forEach((r) => (bySkill[r.skill.id] = bySkill[r.skill.id] || []).push(r));
+  for (const list of Object.values(bySkill)) {
+    if (list.length >= 2) {
+      out.push({ level: 'warn', message: `${list[0].skill.name} purchased ${list.length}× — possible redundant spend.` });
+    }
+  }
+
+  // Repeated budget overrides.
+  const overrides = receipts.filter((r) => r.approvedBy === 'budget-override').length;
+  if (overrides >= 2) out.push({ level: 'danger', message: `${overrides} budget overrides — review budget limits.` });
+
+  return out;
+}
+
 // Spend alerts: does a receipt warrant a human finance review? Returns a short
 // reason (with a severity) or null. Auto-approved, in-budget purchases don't.
 export function reviewFlag(r) {
