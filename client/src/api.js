@@ -80,6 +80,13 @@ export async function acknowledgeReceipt(receiptId) {
   return r.json();
 }
 
+// Batch all unsettled charges into per-vendor payouts.
+export async function runSettlement() {
+  const r = await fetch('/api/settle', { method: 'POST' });
+  if (!r.ok) throw new Error('settlement failed');
+  return r.json();
+}
+
 export const money = (n) =>
   (n < 0 ? '-$' : '$') + Math.abs(Math.round(n)).toLocaleString('en-US');
 

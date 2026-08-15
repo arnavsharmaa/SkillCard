@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import ReceiptCard from '../components/ReceiptCard.jsx';
-import { money } from '../api.js';
+import { money, runSettlement } from '../api.js';
 
 const CATEGORY_LABEL = {
   perception: 'Software / Perception Licensing',
@@ -42,8 +42,21 @@ function downloadCsv(receipts) {
   URL.revokeObjectURL(url);
 }
 
-export default function Receipts({ state }) {
+export default function Receipts({ state, onComplete }) {
   const [robotFilter, setRobotFilter] = useState('all');
+  const [settling, setSettling] = useState(false);
+
+  const settle = async () => {
+    setSettling(true);
+    try {
+      await runSettlement();
+      await onComplete?.();
+    } catch (_) {
+      /* leave outstanding as-is */
+    } finally {
+      setSettling(false);
+    }
+  };
 
   if (state.receipts.length === 0) {
     return (
@@ -67,6 +80,16 @@ export default function Receipts({ state }) {
   }, {});
   const categoryRows = Object.entries(byCategory).sort((a, b) => b[1] - a[1]);
 
+  // Settlement: outstanding (unsettled) charges grouped by vendor.
+  const outstanding = state.receipts.filter((r) => !r.settled);
+  const payablesByVendor = outstanding.reduce((acc, r) => {
+    const v = r.skill.vendor;
+    acc[v] = (acc[v] || 0) + r.cost;
+    return acc;
+  }, {});
+  const payables = Object.entries(payablesByVendor).sort((a, b) => b[1] - a[1]);
+  const outstandingTotal = outstanding.reduce((a, r) => a + r.cost, 0);
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-4">
@@ -79,6 +102,36 @@ export default function Receipts({ state }) {
         >
           ⬇ Export CSV
         </button>
+      </div>
+
+      {/* vendor payables + batch settlement */}
+      <div className="rounded-2xl border border-edge bg-panel p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-muted">Vendor payables</div>
+          {payables.length > 0 ? (
+            <button
+              onClick={settle}
+              disabled={settling}
+              className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-ink hover:brightness-110 transition disabled:opacity-60"
+            >
+              {settling ? 'Settling…' : `Run settlement · ${money(outstandingTotal)}`}
+            </button>
+          ) : (
+            <span className="text-xs font-mono text-accent">✓ all charges settled</span>
+          )}
+        </div>
+        {payables.length > 0 ? (
+          <div className="space-y-1.5">
+            {payables.map(([vendor, amount]) => (
+              <div key={vendor} className="flex items-center justify-between text-sm">
+                <span className="text-white/85 truncate">{vendor}</span>
+                <span className="font-mono">{money(amount)}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-muted">Charges accrue per purchase and settle to vendors in one batch.</p>
+        )}
       </div>
 
       {/* spend by accounting category (expense-report rollup) */}

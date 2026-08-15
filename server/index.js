@@ -62,6 +62,23 @@ app.post('/api/receipts/:id/acknowledge', (req, res) => {
   res.json({ ok: true, receipt });
 });
 
+// ---- Settlement: batch all unsettled charges into vendor payouts -----------
+app.post('/api/settle', (_req, res) => {
+  const unsettled = state.receipts.filter((r) => !r.settled);
+  const byVendor = {};
+  for (const r of unsettled) {
+    const v = r.skill.vendor;
+    byVendor[v] = byVendor[v] || { vendor: v, amount: 0, count: 0 };
+    byVendor[v].amount += r.cost;
+    byVendor[v].count += 1;
+    r.settled = true;
+    r.settledAt = '2026-08-14';
+  }
+  const payouts = Object.values(byVendor).sort((a, b) => b.amount - a.amount);
+  persist();
+  res.json({ settledCount: unsettled.length, total: payouts.reduce((a, p) => a + p.amount, 0), payouts });
+});
+
 // ---- Reset ----------------------------------------------------------------
 app.post('/api/reset', (_req, res) => {
   state.robots = seedRobots();

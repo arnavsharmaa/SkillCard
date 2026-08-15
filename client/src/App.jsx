@@ -160,7 +160,7 @@ export default function App() {
       <main className="mx-auto max-w-7xl w-full px-6 py-7 flex-1">
         {tab === 'live' && <LiveRun key={resetCount} state={state} onComplete={refresh} />}
         {tab === 'marketplace' && <Marketplace state={state} />}
-        {tab === 'receipts' && <Receipts state={state} />}
+        {tab === 'receipts' && <Receipts state={state} onComplete={refresh} />}
         {tab === 'review' && <Review state={state} onComplete={refresh} />}
         {tab === 'fleet' && <Fleet state={state} />}
       </main>
