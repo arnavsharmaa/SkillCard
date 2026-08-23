@@ -1,0 +1,176 @@
+// End-to-end smoke test: boots the server on a scratch port with a temp data
+// file, runs every seeded task through the loop, and asserts the governance
+// invariants hold. Uses RUN_STUBBED=1 so it needs no API key and is
+// deterministic. Run with `npm test`.
+
+import { test, before, after } from 'node:test';
+import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
+import { setTimeout as sleep } from 'node:timers/promises';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const PORT = 3999;
+const BASE = `http://localhost:${PORT}`;
+const DATA_FILE = path.join(__dirname, '..', 'server', 'data.json');
+
+let server;
+let dataBackup = null;
+
+before(async () => {
+  // Don't clobber a developer's persisted state.
+  if (fs.existsSync(DATA_FILE)) dataBackup = fs.readFileSync(DATA_FILE);
+  fs.rmSync(DATA_FILE, { force: true });
+
+  server = spawn('node', ['server/index.js'], {
+    cwd: path.join(__dirname, '..'),
+    env: { ...process.env, PORT: String(PORT), RUN_STUBBED: '1', OPENAI_API_KEY: '' },
+    stdio: 'ignore',
+  });
+  // Wait for the health endpoint.
+  for (let i = 0; i < 40; i++) {
+    try {
+      const r = await fetch(`${BASE}/api/health`);
+      if (r.ok) return;
+    } catch {}
+    await sleep(250);
+  }
+  throw new Error('server did not start');
+});
+
+after(async () => {
+  if (server && server.exitCode === null) {
+    await new Promise((resolve) => {
+      server.once('exit', resolve);
+      server.kill();
+    });
+  }
+  fs.rmSync(DATA_FILE, { force: true });
+  if (dataBackup) fs.writeFileSync(DATA_FILE, dataBackup);
+});
+
+// Consume an SSE run and return its stages + the `done` payload.
+async function runTask(taskId, robotId, extra = '') {
+  const res = await fetch(`${BASE}/api/run/${taskId}?robotId=${robotId}&delay=0${extra}`);
+  const text = await res.text();
+  const stages = [];
+  let done = null;
+  let event = null;
+  for (const line of text.split('\n')) {
+    if (line.startsWith('event:')) event = line.slice(6).trim();
+    else if (line.startsWith('data:')) {
+      const payload = JSON.parse(line.slice(5).trim());
+      if (event === 'stage') stages.push(payload);
+      if (event === 'done') done = payload;
+      if (event === 'error') throw new Error(`run error: ${payload.message}`);
+    }
+  }
+  return { stages, done };
+}
+
+const state = async () => (await fetch(`${BASE}/api/state`)).json();
+const post = (p, body) =>
+  fetch(`${BASE}${p}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+test('health reports the model and stubbed mode', async () => {
+  const h = await (await fetch(`${BASE}/api/health`)).json();
+  assert.equal(h.ok, true);
+  assert.ok(h.model);
+});
+
+test('every seeded task completes the loop or pauses for a human decision', async () => {
+  await post('/api/reset');
+  const { tasks, robots } = await state();
+  assert.equal(tasks.length, 5);
+  assert.equal(robots.length, 3);
+
+  for (const task of tasks) {
+    const { stages, done } = await runTask(task.id, 'rbt-02');
+    const names = stages.map((s) => s.stage);
+    assert.ok(names.includes('ATTEMPT') && names.includes('DIAGNOSE') && names.includes('POLICY'), `${task.id}: core stages`);
+    // Either finished with a receipt, or paused for approval/override.
+    const finished = names.includes('RECEIPT') && stages.at(-1).receipt;
+    const paused = done?.needsApproval || done?.needsOverride;
+    assert.ok(finished || paused, `${task.id}: should finish or pause, got ${names.join('→')}`);
+    if (paused) await post(done.needsApproval ? `/api/approve/${done.approval.receiptId}` : `/api/override/${done.override.receiptId}`);
+  }
+
+  const s = await state();
+  assert.equal(s.receipts.length, 5, 'one receipt per task');
+  assert.ok(s.totalSaved > 0, 'savings accrue');
+});
+
+test('policy hard-blocks teleop for the autonomous unit and falls back', async () => {
+  await post('/api/reset');
+  const { stages } = await runTask('task-01', 'rbt-01');
+  const policy = stages.find((s) => s.stage === 'POLICY');
+  assert.ok(policy.blocked?.length > 0, 'something was blocked');
+  assert.ok(policy.blocked.some((b) => b.skill.category === 'teleop'), 'the teleop option was blocked');
+  assert.notEqual(policy.chosen_skill.category, 'teleop', 'fallback is not teleop');
+  const receipt = stages.at(-1).receipt;
+  assert.equal(receipt.netSaved, receipt.humanBaseline - receipt.cost, 'net saved = baseline − cost');
+});
+
+test('unverified / over-permissioned skills are badged blocked in SHOP', async () => {
+  await post('/api/reset');
+  const { stages } = await runTask('task-01', 'rbt-01');
+  const shop = stages.find((s) => s.stage === 'SHOP');
+  const sketchy = shop.candidates.find((c) => c.vendorVerified === false);
+  assert.ok(sketchy, 'the unverified vendor skill is a candidate');
+  assert.equal(sketchy.policyBadge, 'block');
+});
+
+test('over-ceiling purchase pauses for approval and resumes on approve', async () => {
+  await post('/api/reset');
+  const { done } = await runTask('task-03', 'rbt-02');
+  assert.equal(done.needsApproval, true);
+  const r = await (await post(`/api/approve/${done.approval.receiptId}`)).json();
+  assert.equal(r.receipt.policyDecision, 'human-approved');
+  assert.ok(r.stages.some((s) => s.stage === 'RECEIPT'));
+});
+
+test('over-budget purchase requires an override', async () => {
+  await post('/api/reset');
+  const { done } = await runTask('task-03', 'rbt-03');
+  assert.equal(done.needsOverride, true);
+  const r = await (await post(`/api/override/${done.override.receiptId}`)).json();
+  assert.equal(r.receipt.policyDecision, 'budget-override');
+  assert.ok(r.robot.spent > r.robot.monthlyBudget, 'robot is now over budget');
+});
+
+test('failed skill escalates to an operator and both charges land on one receipt', async () => {
+  await post('/api/reset');
+  const { done } = await runTask('task-01', 'rbt-01', '&fail=1');
+  assert.equal(done.needsOperator, true);
+  const r = await (await post(`/api/operator/${done.escalationId}`)).json();
+  assert.equal(r.receipt.outcome, 'resolved by operator');
+  assert.equal(r.receipt.cost, r.receipt.skillCost + r.receipt.operatorCost);
+  // Double-finalize must be rejected.
+  assert.equal((await post(`/api/operator/${done.escalationId}`)).status, 404);
+});
+
+test('settlement batches charges per vendor and is idempotent', async () => {
+  await post('/api/reset');
+  await runTask('task-02', 'rbt-02');
+  await runTask('task-04', 'rbt-02');
+  const first = await (await post('/api/settle')).json();
+  assert.equal(first.settledCount, 2);
+  assert.equal(first.total, first.payouts.reduce((a, p) => a + p.amount, 0));
+  const second = await (await post('/api/settle')).json();
+  assert.equal(second.settledCount, 0);
+});
+
+test('reset reseeds state and a stale run cannot pollute it', async () => {
+  await runTask('task-02', 'rbt-02');
+  await post('/api/reset');
+  const s = await state();
+  assert.equal(s.receipts.length, 0);
+  assert.equal(s.totalSaved, 0);
+  assert.equal(s.robots[0].spent, 340, 'Atlas-7 back to seed spend');
+});

@@ -25,7 +25,8 @@
     "dev:server": "node server/index.js",
     "dev:client": "npm --prefix client run dev",
     "install:all": "npm install && npm --prefix client install",
-    "build": "npm --prefix client run build"
+    "build": "npm --prefix client run build",
+    "test": "node --test test/*.test.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
