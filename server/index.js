@@ -187,7 +187,8 @@ app.get('/api/run/:taskId', async (req, res) => {
         }
         send('stage', stage);
       },
-      Number(req.query.delay) || 900
+      // Honor an explicit delay, including 0 (`|| 900` would have treated 0 as unset).
+      req.query.delay != null && !Number.isNaN(Number(req.query.delay)) ? Number(req.query.delay) : 900
     );
 
     if (gen !== state.generation) {
