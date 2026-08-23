@@ -1,5 +1,10 @@
 # SkillCard
 
+[![CI](https://github.com/arnavsharmaa/SkillCard/actions/workflows/ci.yml/badge.svg)](https://github.com/arnavsharmaa/SkillCard/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](.nvmrc)
+[![Contributing](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
 **Governed spending for autonomous machines.**
 
 SkillCard is a spend-governance platform for autonomous machines and agents. When a robot
@@ -102,8 +107,18 @@ npm run install:all       # installs root + client deps
 npm run dev               # API on :3001, client on :5173
 ```
 
-Open **http://localhost:5173**. State lives in memory on the server and reseeds on restart
-(or via the in-app reset). No database, no auth.
+Open **http://localhost:5173**. State persists to `server/data.json` (gitignored) and
+survives restarts; the in-app **Reset** reseeds it. No database, no auth.
+
+### Development
+
+```bash
+npm test            # end-to-end smoke suite — stubbed reasoning, no key needed, ~1s
+npm run build       # production client build to client/dist
+```
+
+CI runs both on every push and pull request across Node 18, 20, and 22. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for conventions and the PR checklist.
 
 ---
 
