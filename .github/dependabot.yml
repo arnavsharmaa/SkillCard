@@ -1,0 +1,25 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      server-deps:
+        patterns: ["*"]
+    labels: ["dependencies"]
+
+  - package-ecosystem: npm
+    directory: "/client"
+    schedule:
+      interval: weekly
+    groups:
+      client-deps:
+        patterns: ["*"]
+    labels: ["dependencies"]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    labels: ["dependencies", "ci"]

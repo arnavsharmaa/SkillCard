@@ -1,0 +1,54 @@
+name: Bug report
+description: Something isn't working as expected
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Select task … and robot …
+        2. Press Run Task
+        3. Observe …
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Policy engine / governance
+        - Live Run loop
+        - Marketplace
+        - Receipts / settlement
+        - Review inbox
+        - Fleet
+        - Reasoning (model calls / fallbacks)
+        - Persistence
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: node
+    attributes:
+      label: Node version
+      placeholder: e.g. 20.11.0
+  - type: checkboxes
+    id: mode
+    attributes:
+      label: Reasoning mode
+      options:
+        - label: Reproduces with `RUN_STUBBED=1` (no API key)
+        - label: Only reproduces with a live `OPENAI_API_KEY`
+  - type: textarea
+    id: logs
+    attributes:
+      label: Server logs / console output
+      render: shell
