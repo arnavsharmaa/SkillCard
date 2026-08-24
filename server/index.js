@@ -125,7 +125,11 @@ app.post('/api/approve/:receiptId', (req, res) => {
 
 // Human picks a different skill from the marketplace instead.
 app.post('/api/skill-choice/:receiptId', (req, res) => {
-  applyFinalize(res, req.params.receiptId, req.body.skillId, 'operator');
+  const skillId = req.body?.skillId;
+  if (typeof skillId !== 'string' || !skillId) {
+    return res.status(400).json({ error: 'Body must include a "skillId" string.' });
+  }
+  applyFinalize(res, req.params.receiptId, skillId, 'operator');
 });
 
 // Human authorizes a budget override to buy the over-budget skill anyway.
@@ -151,9 +155,13 @@ app.post('/api/operator/:escalationId', (req, res) => {
 // ---- The core loop as an SSE stream ---------------------------------------
 // GET /api/run/:taskId?robotId=rbt-01 — streams each stage as it happens.
 app.get('/api/run/:taskId', async (req, res) => {
+  // Validate inputs BEFORE opening the stream so bad requests get a real 4xx.
   const task = state.tasks.find((t) => t.id === req.params.taskId);
-  const robot =
-    state.robots.find((r) => r.id === req.query.robotId) || state.robots[0];
+  if (!task) return res.status(404).json({ error: `Unknown task "${req.params.taskId}".` });
+  const robot = req.query.robotId != null
+    ? state.robots.find((r) => r.id === req.query.robotId)
+    : state.robots[0];
+  if (!robot) return res.status(404).json({ error: `Unknown robot "${req.query.robotId}".` });
 
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -164,11 +172,6 @@ app.get('/api/run/:taskId', async (req, res) => {
     res.write(`event: ${event}\n`);
     res.write(`data: ${JSON.stringify(payload)}\n\n`);
   };
-
-  if (!task) {
-    send('error', { message: 'Task not found' });
-    return res.end();
-  }
 
   send('start', { task, robot: { id: robot.id, name: robot.name } });
 
@@ -252,6 +255,14 @@ app.get('/api/run/:taskId', async (req, res) => {
     send('error', { message: 'The run hit a snag. Please try again.' });
   }
   res.end();
+});
+
+// ---- JSON fallthroughs: the API never returns HTML error pages -------------
+app.use('/api', (_req, res) => res.status(404).json({ error: 'Unknown endpoint.' }));
+// eslint-disable-next-line no-unused-vars -- Express identifies error handlers by arity
+app.use((err, _req, res, _next) => {
+  console.error('[API error]', err);
+  res.status(500).json({ error: 'Internal error.' });
 });
 
 app.listen(PORT, () => {

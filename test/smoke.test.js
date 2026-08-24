@@ -166,6 +166,24 @@ test('settlement batches charges per vendor and is idempotent', async () => {
   assert.equal(second.settledCount, 0);
 });
 
+test('invalid input gets a clean JSON 4xx, never HTML or a silent fallback', async () => {
+  await post('/api/reset');
+  // Unknown task / robot are rejected before the stream opens.
+  const badTask = await fetch(`${BASE}/api/run/task-99?robotId=rbt-01`);
+  assert.equal(badTask.status, 404);
+  assert.match((await badTask.json()).error, /task/i);
+  const badRobot = await fetch(`${BASE}/api/run/task-01?robotId=rbt-99`);
+  assert.equal(badRobot.status, 404);
+  assert.match((await badRobot.json()).error, /robot/i);
+  // A body-less skill choice is a 400, not a crash.
+  const noBody = await fetch(`${BASE}/api/skill-choice/whatever`, { method: 'POST' });
+  assert.equal(noBody.status, 400);
+  // Unknown API routes return JSON, not an HTML error page.
+  const unknown = await fetch(`${BASE}/api/nope`);
+  assert.equal(unknown.status, 404);
+  assert.ok((await unknown.json()).error);
+});
+
 test('reset reseeds state and a stale run cannot pollute it', async () => {
   await runTask('task-02', 'rbt-02');
   await post('/api/reset');
