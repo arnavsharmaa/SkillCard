@@ -9,7 +9,7 @@ conventions the codebase follows, and how changes get merged.
 git clone https://github.com/arnavsharmaa/SkillCard.git
 cd SkillCard
 cp .env.example .env        # optional: add OPENAI_API_KEY for live reasoning
-nvm use                     # Node 20 (see .nvmrc); Node >=18 is supported
+nvm use                     # Node 20 (see .nvmrc); Node >=20.19 is supported
 npm run install:all
 npm run dev                 # API on :3001, client on :5173
 ```
@@ -69,7 +69,7 @@ from the diff.
 ## Pull requests
 
 1. Branch from `main`.
-2. Make sure `npm test` and `npm run build` pass locally — CI runs both on Node 18/20/22.
+2. Make sure `npm test` and `npm run build` pass locally — CI runs both on Node 20/22/24.
 3. Fill in the PR template. Link an issue if one exists.
 4. One logical change per PR. Large features are easier to review as a short series.
 
