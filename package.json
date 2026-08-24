@@ -26,6 +26,7 @@
     "dev:client": "npm --prefix client run dev",
     "install:all": "npm install && npm --prefix client install",
     "build": "npm --prefix client run build",
+    "lint": "eslint .",
     "test": "node --test test/*.test.js"
   },
   "dependencies": {
@@ -35,6 +36,10 @@
     "openai": "^4.56.0"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "@eslint/js": "^10.0.1",
+    "concurrently": "^8.2.2",
+    "eslint": "^10.9.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.11.0"
   }
 }
