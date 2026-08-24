@@ -45,7 +45,9 @@ export default function LiveRun({ state, onComplete }) {
   // re-subscribing. Ignored while a run is in flight or a field/button is focused.
   const runRef = useRef(null);
   const runningRef = useRef(running);
-  runningRef.current = running;
+  useEffect(() => {
+    runningRef.current = running;
+  }, [running]);
   useEffect(() => {
     const onKey = (e) => {
       if (e.key !== 'Enter' || e.metaKey || e.ctrlKey || e.altKey) return;
@@ -92,7 +94,9 @@ export default function LiveRun({ state, onComplete }) {
       simulateFail
     );
   };
-  runRef.current = run;
+  useEffect(() => {
+    runRef.current = run;
+  });
 
   const onOperatorResolved = (result) => {
     setReceipt(result.receipt);

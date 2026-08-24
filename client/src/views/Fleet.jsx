@@ -16,13 +16,13 @@ export default function Fleet({ state }) {
   const humanApproved = byDecision('human-approved');
   const operatorChosen = byDecision('operator-chosen');
   const overrides = byDecision('budget-override');
-  const escalations = receipts.filter((r) => r.operator).length;
   const flaggedForReview = receipts.filter((r) => reviewFlag(r) && !r.acknowledged).length;
   const overBudgetBots = robots.filter((r) => r.spent > r.monthlyBudget).length;
 
   // Cumulative savings across receipts, oldest → newest.
-  let cum = 0;
-  const savingsTrend = [...receipts].reverse().map((r) => (cum += r.netSaved || 0));
+  const savingsTrend = [...receipts]
+    .reverse()
+    .reduce((acc, r) => (acc.push((acc.at(-1) ?? 0) + (r.netSaved || 0)), acc), []);
 
   const anomalies = detectAnomalies(receipts);
 

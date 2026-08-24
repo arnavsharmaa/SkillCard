@@ -76,7 +76,7 @@ export async function diagnose(task, robot, telemetry) {
 // is what it's good at, and what makes the agent look like it's thinking. This
 // also keeps the demo's policy-block beat reliable (a "smart" live model would
 // otherwise dodge the blocked option and never trigger the block).
-export async function reason(diagnosis, candidates, chosen, task, robot) {
+export async function reason(diagnosis, candidates, chosen, task, _robot) {
   const canned = cannedReasoning(candidates, task, chosen);
   if (STUBBED) return { data: canned, source: 'stub' };
 
