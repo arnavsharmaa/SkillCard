@@ -7,6 +7,8 @@ build/
 *.log
 .vite/
 server/data.json
+server/data.json.imported
+server/skillcard.db*
 
 # editor / OS
 .vscode/

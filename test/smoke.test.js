@@ -1,6 +1,6 @@
-// End-to-end smoke test: boots the server on a scratch port with a temp data
-// file, runs every seeded task through the loop, and asserts the governance
-// invariants hold. Uses RUN_STUBBED=1 so it needs no API key and is
+// End-to-end smoke test: boots the server on a scratch port with a scratch
+// SQLite database, runs every seeded task through the loop, and asserts the
+// governance invariants hold. Uses RUN_STUBBED=1 so it needs no API key and is
 // deterministic. Run with `npm test`.
 
 import { test, before, after } from 'node:test';
@@ -8,47 +8,50 @@ import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = 3999;
 const BASE = `http://localhost:${PORT}`;
-const DATA_FILE = path.join(__dirname, '..', 'server', 'data.json');
+const SCRATCH = fs.mkdtempSync(path.join(os.tmpdir(), 'skillcard-test-'));
+const DB_FILE = path.join(SCRATCH, 'test.db');
 
 let server;
-let dataBackup = null;
 
-before(async () => {
-  // Don't clobber a developer's persisted state.
-  if (fs.existsSync(DATA_FILE)) dataBackup = fs.readFileSync(DATA_FILE);
-  fs.rmSync(DATA_FILE, { force: true });
-
-  server = spawn('node', ['server/index.js'], {
+async function startServer() {
+  const child = spawn('node', ['server/index.js'], {
     cwd: path.join(__dirname, '..'),
-    env: { ...process.env, PORT: String(PORT), RUN_STUBBED: '1', OPENAI_API_KEY: '' },
+    env: { ...process.env, PORT: String(PORT), RUN_STUBBED: '1', SKILLCARD_DB: DB_FILE },
     stdio: 'ignore',
   });
-  // Wait for the health endpoint.
   for (let i = 0; i < 40; i++) {
     try {
       const r = await fetch(`${BASE}/api/health`);
-      if (r.ok) return;
+      if (r.ok) return child;
     } catch {}
     await sleep(250);
   }
   throw new Error('server did not start');
+}
+
+async function stopServer(child) {
+  if (child && child.exitCode === null) {
+    await new Promise((resolve) => {
+      child.once('exit', resolve);
+      child.kill();
+    });
+  }
+}
+
+before(async () => {
+  server = await startServer();
 });
 
 after(async () => {
-  if (server && server.exitCode === null) {
-    await new Promise((resolve) => {
-      server.once('exit', resolve);
-      server.kill();
-    });
-  }
-  fs.rmSync(DATA_FILE, { force: true });
-  if (dataBackup) fs.writeFileSync(DATA_FILE, dataBackup);
+  await stopServer(server);
+  fs.rmSync(SCRATCH, { recursive: true, force: true });
 });
 
 // Consume an SSE run and return its stages + the `done` payload.
@@ -191,4 +194,27 @@ test('reset reseeds state and a stale run cannot pollute it', async () => {
   assert.equal(s.receipts.length, 0);
   assert.equal(s.totalSaved, 0);
   assert.equal(s.robots[0].spent, 340, 'Atlas-7 back to seed spend');
+});
+
+test('state survives a full server restart (SQLite persistence)', async () => {
+  await post('/api/reset');
+  await runTask('task-01', 'rbt-01');
+  const beforeRestart = await state();
+  assert.equal(beforeRestart.receipts.length, 1);
+  assert.ok(beforeRestart.totalSaved > 0);
+
+  await stopServer(server);
+  server = await startServer();
+
+  const afterRestart = await state();
+  assert.equal(afterRestart.totalSaved, beforeRestart.totalSaved, 'savings survive');
+  assert.equal(afterRestart.receipts.length, 1, 'receipts survive');
+  assert.equal(afterRestart.receipts[0].id, beforeRestart.receipts[0].id, 'same receipt');
+  assert.deepEqual(
+    afterRestart.robots.map((r) => [r.id, r.spent, r.capabilities.length]),
+    beforeRestart.robots.map((r) => [r.id, r.spent, r.capabilities.length]),
+    'robot spend and installed capabilities survive'
+  );
+  assert.deepEqual(afterRestart.tasks, beforeRestart.tasks, 'tasks round-trip exactly');
+  assert.deepEqual(afterRestart.marketplace, beforeRestart.marketplace, 'marketplace round-trips exactly');
 });
