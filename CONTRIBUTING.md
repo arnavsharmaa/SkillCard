@@ -30,7 +30,7 @@ and is fully deterministic. It should finish in under a few seconds.
 | `server/loop.js` | The stage loop and the **deterministic policy engine**. Governance rules go here. |
 | `server/openai.js` | The two model calls. Both must stay strict-JSON and fall back on any error. |
 | `server/seed.js` | Robots, tasks, and the skill marketplace. |
-| `server/store.js` | File-backed persistence. |
+| `server/store.js` | SQLite persistence (better-sqlite3). Schema changes go here. |
 | `client/src/views/` | One file per top-level view (Live Run, Marketplace, Receipts, Review, Fleet). |
 | `client/src/components/` | Shared UI. |
 | `client/src/api.js` | All server calls plus the spend-alert and anomaly helpers. |

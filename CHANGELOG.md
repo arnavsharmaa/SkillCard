@@ -7,8 +7,10 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **SQLite persistence** (`better-sqlite3`, WAL): robots, tasks, marketplace, receipts,
+  and meta live in a real schema; a legacy `server/data.json` is imported once on boot.
 - End-to-end smoke test suite (`npm test`) covering the loop, policy blocks, approvals,
-  budget override, operator escalation, settlement, and reset.
+  budget override, operator escalation, settlement, reset, and restart persistence.
 - GitHub Actions CI: lint + build + test matrix on Node 22 / 24.
 - Contributor docs: `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, issue and PR
   templates, Dependabot.

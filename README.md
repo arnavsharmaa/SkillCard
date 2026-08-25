@@ -77,7 +77,7 @@ high cost-to-value) is automatically **flagged for review**.
 - **Receipts** — an auditable receipt per purchase; filter by robot, **export to CSV**, a spend-by-accounting-category breakdown, and **vendor payables with one-run batch settlement**. Receipts needing attention are flagged for review.
 - **Review** — a finance inbox that queues every flagged purchase (override, escalation, over-ceiling approval, high cost-to-value) for a human to acknowledge, with a live pending count.
 - **Fleet** — per-robot budgets, policies, and installed capabilities; a fleet-wide governance rollup, a cumulative-savings trend, and **cross-receipt spend-anomaly detection** (vendor concentration, redundant spend, repeated overrides).
-- **Persistence** — fleet and receipt state is written to disk and survives restarts.
+- **Persistence** — fleet and receipt state lives in a local SQLite database and survives restarts.
 - **Live model status** — a header pill and per-stage latency show whether reasoning ran on the live model or the deterministic fallback.
 - **Keyboard shortcuts** — `Enter` runs, `R` resets, `1`–`5` switch views.
 
@@ -107,7 +107,7 @@ npm run install:all       # installs root + client deps
 npm run dev               # API on :3001, client on :5173
 ```
 
-Open **http://localhost:5173**. State persists to `server/data.json` (gitignored) and
+Open **http://localhost:5173**. State persists to a local SQLite database (`server/skillcard.db`, gitignored) and
 survives restarts; the in-app **Reset** reseeds it. No database, no auth.
 
 ### Development
@@ -131,7 +131,7 @@ server/
   loop.js        The stage loop, deterministic policy engine, escalation & override
   openai.js      The two model calls (strict JSON, try/catch)
   fallbacks.js   Deterministic diagnosis / reasoning / telemetry
-  store.js       File-backed state persistence
+  store.js       SQLite persistence (better-sqlite3, WAL)
 client/src/
   App.jsx           Shell: savings counter, model status, tabs, connection retry
   views/            LiveRun · Marketplace · Receipts · Review · Fleet
@@ -166,7 +166,7 @@ package · `concurrently` for one-command dev · in-memory state.
 ## Roadmap
 
 - **Real settlement rails** — actual card issuance and vendor payouts (settlement is currently modeled in-app, not connected to a payment processor).
-- **Database-backed storage** and real fleet/vendor accounts (state currently persists to a local JSON file).
+- Real fleet/vendor **accounts** (state is currently a single local SQLite database).
 - **Multi-tenant fleets and role-based access** for operators, approvers, and admins.
 
 ## Status
