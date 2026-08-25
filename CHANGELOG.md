@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [0.4.0] — 2026-08-25
+
 ### Added
 - **SQLite persistence** (`better-sqlite3`, WAL): robots, tasks, marketplace, receipts,
   and meta live in a real schema; a legacy `server/data.json` is imported once on boot.
@@ -64,7 +68,8 @@ All notable changes to this project are documented here. The format follows
   two strict-JSON model calls with deterministic fallbacks, human-operator escalation,
   and the Live Run / Receipts / Fleet views.
 
-[Unreleased]: https://github.com/arnavsharmaa/SkillCard/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/arnavsharmaa/SkillCard/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/arnavsharmaa/SkillCard/releases/tag/v0.4.0
 [0.3.0]: https://github.com/arnavsharmaa/SkillCard/releases/tag/v0.3.0
 [0.2.0]: https://github.com/arnavsharmaa/SkillCard/releases/tag/v0.2.0
 [0.1.0]: https://github.com/arnavsharmaa/SkillCard/releases/tag/v0.1.0
