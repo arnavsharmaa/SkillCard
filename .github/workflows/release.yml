@@ -1,0 +1,61 @@
+name: Release
+
+# Publishes a GitHub Release whenever a v* tag is pushed. Can also be run
+# manually (Actions → Release → Run workflow) with an existing tag name to
+# backfill a release for a tag that predates this workflow.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to publish a release for (e.g. v0.3.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve tag
+        id: tag
+        run: echo "tag=${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.tag.outputs.tag }}
+
+      # Release notes come from the CHANGELOG on main, which is the up-to-date
+      # record even for tags cut before their section was finalized.
+      - name: Fetch current CHANGELOG
+        run: |
+          git fetch origin main --depth 1
+          git checkout origin/main -- CHANGELOG.md scripts/release-notes.mjs
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Extract release notes
+        run: node scripts/release-notes.mjs "${{ steps.tag.outputs.tag }}" > /tmp/notes.md && cat /tmp/notes.md
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG already exists — skipping."
+          else
+            gh release create "$TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "$TAG" \
+              --notes-file /tmp/notes.md \
+              --verify-tag
+          fi
