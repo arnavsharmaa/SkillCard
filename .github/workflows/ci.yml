@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: [20, 22, 24]
+        node: [22, 24]
 
     steps:
       - name: Checkout
@@ -52,7 +52,7 @@ jobs:
           RUN_STUBBED: "1"
 
       - name: Upload client build
-        if: matrix.node == 20
+        if: matrix.node == 22
         uses: actions/upload-artifact@v4
         with:
           name: client-dist

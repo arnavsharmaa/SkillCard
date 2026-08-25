@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/arnavsharmaa/SkillCard/actions/workflows/ci.yml/badge.svg)](https://github.com/arnavsharmaa/SkillCard/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Node](https://img.shields.io/badge/node-%3E%3D20.19-brightgreen)](.nvmrc)
+[![Node](https://img.shields.io/badge/node-%3E%3D22-brightgreen)](.nvmrc)
 [![Contributing](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 **Governed spending for autonomous machines.**
@@ -117,7 +117,7 @@ npm test            # end-to-end smoke suite — stubbed reasoning, no key neede
 npm run build       # production client build to client/dist
 ```
 
-CI runs both on every push and pull request across Node 20, 22, and 24. See
+CI runs both on every push and pull request across Node 22 and 24. See
 [CONTRIBUTING.md](CONTRIBUTING.md) for conventions and the PR checklist.
 
 ---

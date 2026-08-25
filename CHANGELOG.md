@@ -9,12 +9,12 @@ All notable changes to this project are documented here. The format follows
 ### Added
 - End-to-end smoke test suite (`npm test`) covering the loop, policy blocks, approvals,
   budget override, operator escalation, settlement, and reset.
-- GitHub Actions CI: lint + build + test matrix on Node 20 / 22 / 24.
+- GitHub Actions CI: lint + build + test matrix on Node 22 / 24.
 - Contributor docs: `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, issue and PR
   templates, Dependabot.
 
 ### Changed
-- Node >=20.19 is now required (Node 18 is end-of-life and unsupported by current tooling).
+- Node >=22.13 is now required (Node 18 and 20 are end-of-life; current tooling and better-sqlite3 need 22+).
 
 ### Fixed
 - `GET /api/run` now honors an explicit `delay=0`; it was previously treated as unset and
