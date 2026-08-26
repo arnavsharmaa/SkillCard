@@ -1,5 +1,5 @@
-// SkillCard server — Express + SSE stream for the core loop, with lightweight
-// file persistence so state survives restarts. No auth.
+// SkillCard server — Express + SSE stream for the core loop, with SQLite
+// persistence so state survives restarts. No auth.
 
 import 'dotenv/config';
 import express from 'express';
@@ -7,11 +7,25 @@ import cors from 'cors';
 import { seedRobots, seedTasks, seedMarketplace } from './seed.js';
 import { runTask, resolveWithOperator, finalizePurchase } from './loop.js';
 import { MODEL } from './openai.js';
-import { loadState, saveState } from './store.js';
+import { loadState, saveState, closeStore } from './store.js';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Request log: method, path, status, duration. Silenced in tests (RUN_STUBBED)
+// and skipped for health polls to keep the log signal-heavy.
+if (process.env.RUN_STUBBED !== '1') {
+  app.use((req, res, next) => {
+    if (req.path === '/api/health') return next();
+    const t0 = process.hrtime.bigint();
+    res.on('finish', () => {
+      const ms = Number(process.hrtime.bigint() - t0) / 1e6;
+      console.log(`${req.method} ${req.originalUrl} ${res.statusCode} ${ms.toFixed(0)}ms`);
+    });
+    next();
+  });
+}
 
 const PORT = process.env.PORT || 3001;
 
@@ -265,7 +279,21 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: 'Internal error.' });
 });
 
-app.listen(PORT, () => {
+const httpServer = app.listen(PORT, () => {
   console.log(`\n  SkillCard  ·  API on http://localhost:${PORT}  ·  UI on http://localhost:5173`);
   console.log(`  Model: ${MODEL}  |  API key: ${process.env.OPENAI_API_KEY ? 'set (live gpt-4o)' : 'MISSING (using canned fallbacks)'}\n`);
 });
+
+// Graceful shutdown: persist, flush the SQLite WAL, stop accepting connections.
+// A short force-exit timer covers a stuck close (e.g. an open SSE stream).
+function shutdown(signal) {
+  console.log(`\n[server] ${signal} — shutting down`);
+  try {
+    persist();
+    closeStore();
+  } catch {}
+  httpServer.close(() => process.exit(0));
+  setTimeout(() => process.exit(0), 2000).unref();
+}
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));

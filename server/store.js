@@ -182,6 +182,16 @@ function rowToSkill(row) {
   return skill;
 }
 
+// Flush WAL and close the handle; called on graceful shutdown.
+export function closeStore() {
+  try {
+    db.pragma('wal_checkpoint(TRUNCATE)');
+    db.close();
+  } catch (err) {
+    console.error('[persist] close failed', err.message);
+  }
+}
+
 export function loadState() {
   try {
     // One-time import of the legacy JSON store.
