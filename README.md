@@ -124,6 +124,8 @@ CI runs both on every push and pull request across Node 22 and 24. See
 
 ## Architecture
 
+A deeper walkthrough with diagrams lives in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
 ```
 server/
   index.js       Express + SSE run stream + decision/settlement endpoints

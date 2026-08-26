@@ -6,7 +6,9 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
-_Nothing yet._
+### Added
+- Request logging and graceful shutdown (SIGINT/SIGTERM persist + SQLite WAL flush).
+- `docs/ARCHITECTURE.md` — system, run-loop, and policy-engine walkthrough with diagrams.
 
 ## [0.4.0] — 2026-08-25
 
