@@ -108,7 +108,7 @@ npm run dev               # API on :3001, client on :5173
 ```
 
 Open **http://localhost:5173**. State persists to a local SQLite database (`server/skillcard.db`, gitignored) and
-survives restarts; the in-app **Reset** reseeds it. No database, no auth.
+survives restarts; the in-app **Reset** reseeds it. No external services, no auth.
 
 ### Development
 
