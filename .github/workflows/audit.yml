@@ -1,0 +1,41 @@
+name: Dependency audit
+
+# Weekly npm audit of both dependency trees, runnable on demand. Kept separate
+# from CI so a freshly published advisory never blocks unrelated pull requests;
+# a red run here is a signal to bump dependencies (Dependabot usually has the
+# PR open already).
+
+on:
+  schedule:
+    - cron: "17 6 * * 1" # Mondays 06:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            client/package-lock.json
+
+      - name: Install
+        run: |
+          npm ci
+          npm --prefix client ci
+
+      - name: Audit server dependencies
+        run: npm audit --audit-level=high
+
+      - name: Audit client dependencies
+        run: npm --prefix client audit --audit-level=high
