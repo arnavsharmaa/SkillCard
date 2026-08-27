@@ -1,0 +1,333 @@
+openapi: 3.1.0
+info:
+  title: SkillCard API
+  version: 0.4.0
+  description: >
+    Spend-governance API for autonomous machines. The run loop streams over
+    Server-Sent Events; every decision that moves money is deterministic server
+    code, and human decisions (approval, override, operator, review) resume
+    through their own endpoints. No authentication — intended to run locally or
+    behind your own access controls (see SECURITY.md).
+  license:
+    name: MIT
+    url: https://github.com/arnavsharmaa/SkillCard/blob/main/LICENSE
+
+servers:
+  - url: http://localhost:3001
+
+paths:
+  /api/health:
+    get:
+      summary: Liveness, model name, and last reasoning source
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  model: { type: string }
+                  hasKey: { type: boolean }
+                  lastSource:
+                    type: [string, "null"]
+                    enum: [openai, fallback, stub, null]
+
+  /api/state:
+    get:
+      summary: Full working state — robots, tasks, marketplace, receipts, savings
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  robots: { type: array, items: { $ref: "#/components/schemas/Robot" } }
+                  tasks: { type: array, items: { $ref: "#/components/schemas/Task" } }
+                  marketplace: { type: array, items: { $ref: "#/components/schemas/Skill" } }
+                  receipts: { type: array, items: { $ref: "#/components/schemas/Receipt" } }
+                  totalSaved: { type: number }
+
+  /api/receipts:
+    get:
+      summary: All receipts, newest first
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Receipt" }
+
+  /api/receipts/{id}/acknowledge:
+    post:
+      summary: Finance review — acknowledge a flagged receipt
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  receipt: { $ref: "#/components/schemas/Receipt" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /api/settle:
+    post:
+      summary: Batch all unsettled charges into per-vendor payouts (idempotent)
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  settledCount: { type: integer }
+                  total: { type: number }
+                  payouts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        vendor: { type: string }
+                        amount: { type: number }
+                        count: { type: integer }
+
+  /api/reset:
+    post:
+      summary: Reseed all state (also invalidates in-flight runs via the generation guard)
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+
+  /api/run/{taskId}:
+    get:
+      summary: Run the loop for a task, streamed stage-by-stage over SSE
+      description: >
+        Responds as `text/event-stream`. Events: `start`, then one `stage` per
+        loop stage (ATTEMPT, DIAGNOSE, SHOP, REASON, POLICY, then PURCHASE /
+        RETRY / ESCALATE / RECEIPT as applicable), then `done`. The `done`
+        payload may instead carry `needsApproval`, `needsOverride`, or
+        `needsOperator` with the context needed to resume via the decision
+        endpoints. A custom `error` event carries a friendly message; raw
+        errors are never streamed.
+      parameters:
+        - { name: taskId, in: path, required: true, schema: { type: string } }
+        - name: robotId
+          in: query
+          schema: { type: string }
+          description: Defaults to the first robot when omitted; unknown ids are a 404.
+        - name: delay
+          in: query
+          schema: { type: integer, minimum: 0 }
+          description: Per-stage pacing in milliseconds (0 honored; default 900).
+        - name: fail
+          in: query
+          schema: { type: string, enum: ["1"] }
+          description: Force the purchased skill to fail so the run escalates to an operator.
+      responses:
+        "200":
+          description: SSE stream
+          content:
+            text/event-stream:
+              schema: { type: string }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /api/approve/{receiptId}:
+    post:
+      summary: Approve a flagged (over-ceiling) purchase as proposed
+      parameters:
+        - { name: receiptId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { $ref: "#/components/responses/Finalized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /api/skill-choice/{receiptId}:
+    post:
+      summary: Resolve a flagged purchase by buying a different skill
+      parameters:
+        - { name: receiptId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [skillId]
+              properties:
+                skillId: { type: string }
+      responses:
+        "200": { $ref: "#/components/responses/Finalized" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /api/override/{receiptId}:
+    post:
+      summary: Authorize an over-budget purchase (logged as budget-override)
+      parameters:
+        - { name: receiptId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { $ref: "#/components/responses/Finalized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /api/operator/{escalationId}:
+    post:
+      summary: Finalize an escalated task after a human operator resolves it
+      parameters:
+        - { name: escalationId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { $ref: "#/components/responses/Finalized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+components:
+  responses:
+    NotFound:
+      description: Unknown id
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    BadRequest:
+      description: Invalid input
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Finalized:
+      description: The purchase completed; stages to append and the receipt
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              receipt: { $ref: "#/components/schemas/Receipt" }
+              netSaved: { type: number }
+              totalSaved: { type: number }
+              stages: { type: array, items: { type: object } }
+              robot: { $ref: "#/components/schemas/Robot" }
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+
+    Robot:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        model: { type: string }
+        type: { type: string, enum: [humanoid, quadruped, arm] }
+        monthlyBudget: { type: number }
+        spent: { type: number }
+        tasksCompleted: { type: integer }
+        capabilities: { type: array, items: { type: string } }
+        policy:
+          type: object
+          properties:
+            autoApproveCeiling: { type: number }
+            blockedCategories: { type: array, items: { type: string } }
+            requiredCertifications: { type: array, items: { type: string } }
+            requireVerifiedVendor: { type: boolean }
+            blockUnrestrictedPermissions: { type: boolean }
+        history:
+          type: array
+          items:
+            type: object
+            properties:
+              label: { type: string }
+              amount: { type: number }
+              ts: { type: string }
+              approvedBy: { type: string }
+
+    Task:
+      type: object
+      properties:
+        id: { type: string }
+        description: { type: string }
+        requiredCapability: { type: string }
+        taskValue: { type: number }
+        humanBaselineCost: { type: number }
+        downtimeCost: { type: number }
+        difficulty: { type: string }
+        blocker: { type: string }
+
+    Skill:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        vendor: { type: string }
+        price: { type: number }
+        pricingModel: { type: string }
+        capability: { type: string }
+        successRate: { type: number }
+        category: { type: string }
+        vendorVerified: { type: boolean }
+        riskLevel: { type: string }
+        requiredHardware: { type: array, items: { type: string } }
+        certifications: { type: array, items: { type: string } }
+        requestedPermissions: { type: array, items: { type: string } }
+
+    Receipt:
+      type: object
+      description: >
+        The auditable record of one purchase: what broke, what was bought, what
+        was rejected and why, the economics, and how it was authorized.
+      properties:
+        id: { type: string }
+        ts: { type: string }
+        robot:
+          type: object
+          properties:
+            id: { type: string }
+            name: { type: string }
+        task:
+          type: object
+          properties:
+            id: { type: string }
+            description: { type: string }
+        diagnosis: { type: string }
+        skill:
+          type: object
+          properties:
+            id: { type: string }
+            name: { type: string }
+            vendor: { type: string }
+            price: { type: number }
+            pricingModel: { type: string }
+        alternatives:
+          type: array
+          items:
+            type: object
+            properties:
+              skill_id: { type: string }
+              reason: { type: string }
+        blocked: { type: array, items: { type: object } }
+        outcome: { type: string }
+        taskValue: { type: number }
+        humanBaseline: { type: number }
+        downtimeAvoided: { type: number }
+        cost: { type: number }
+        skillCost: { type: number }
+        operatorCost: { type: number }
+        netSaved: { type: number }
+        category: { type: string }
+        policyDecision: { type: string }
+        approvedBy: { type: string }
+        operator:
+          type: object
+          properties:
+            vendor: { type: string }
+            cost: { type: number }
+            accessRevoked: { type: boolean }
+        acknowledged: { type: boolean }
+        settled: { type: boolean }

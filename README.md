@@ -145,6 +145,9 @@ client/src/
 
 ### API
 
+The full HTTP contract is specified in [docs/openapi.yaml](docs/openapi.yaml); a
+drift-guard test keeps it in lockstep with the implemented routes.
+
 | Endpoint | Purpose |
 |---|---|
 | `GET /api/health` | model name, whether a key is set, and the last reasoning source |

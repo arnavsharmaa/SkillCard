@@ -9,6 +9,7 @@ All notable changes to this project are documented here. The format follows
 ### Added
 - Request logging and graceful shutdown (SIGINT/SIGTERM persist + SQLite WAL flush).
 - `docs/ARCHITECTURE.md` — system, run-loop, and policy-engine walkthrough with diagrams.
+- `docs/openapi.yaml` — OpenAPI 3.1 spec for the HTTP API, with a route drift-guard test.
 
 ## [0.4.0] — 2026-08-25
 
