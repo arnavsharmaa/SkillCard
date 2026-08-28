@@ -81,10 +81,13 @@ const post = (p, body) =>
     body: body ? JSON.stringify(body) : undefined,
   });
 
-test('health reports the model and stubbed mode', async () => {
+test('health reports model, version, and uptime', async () => {
   const h = await (await fetch(`${BASE}/api/health`)).json();
   assert.equal(h.ok, true);
   assert.ok(h.model);
+  const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
+  assert.equal(h.version, pkg.version);
+  assert.ok(Number.isInteger(h.uptimeSec) && h.uptimeSec >= 0);
 });
 
 test('every seeded task completes the loop or pauses for a human decision', async () => {

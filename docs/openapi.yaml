@@ -27,6 +27,8 @@ paths:
                 type: object
                 properties:
                   ok: { type: boolean }
+                  version: { type: string }
+                  uptimeSec: { type: integer }
                   model: { type: string }
                   hasKey: { type: boolean }
                   lastSource:

@@ -2,6 +2,7 @@
 // persistence so state survives restarts. No auth.
 
 import 'dotenv/config';
+import fs from 'fs';
 import express from 'express';
 import cors from 'cors';
 import { seedRobots, seedTasks, seedMarketplace } from './seed.js';
@@ -50,8 +51,20 @@ if (persisted) Object.assign(state, persisted);
 const persist = () => saveState(state);
 
 // ---- Read endpoints -------------------------------------------------------
+const VERSION = JSON.parse(
+  fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')
+).version;
+const bootedAt = Date.now();
+
 app.get('/api/health', (_req, res) =>
-  res.json({ ok: true, model: MODEL, hasKey: !!process.env.OPENAI_API_KEY, lastSource: state.lastSource })
+  res.json({
+    ok: true,
+    version: VERSION,
+    uptimeSec: Math.round((Date.now() - bootedAt) / 1000),
+    model: MODEL,
+    hasKey: !!process.env.OPENAI_API_KEY,
+    lastSource: state.lastSource,
+  })
 );
 
 app.get('/api/state', (_req, res) => {
