@@ -79,6 +79,21 @@ app.get('/api/state', (_req, res) => {
 
 app.get('/api/receipts', (_req, res) => res.json(state.receipts));
 
+// ---- Audit export: the durable state as a downloadable, versioned snapshot --
+app.get('/api/export', (_req, res) => {
+  const snapshot = {
+    exportedAt: new Date().toISOString(),
+    version: VERSION,
+    totalSaved: state.totalSaved,
+    robots: state.robots,
+    tasks: state.tasks,
+    marketplace: state.marketplace,
+    receipts: state.receipts,
+  };
+  res.setHeader('Content-Disposition', `attachment; filename="skillcard-export-${snapshot.exportedAt.slice(0, 10)}.json"`);
+  res.json(snapshot);
+});
+
 // ---- Finance review: acknowledge a flagged receipt ------------------------
 app.post('/api/receipts/:id/acknowledge', (req, res) => {
   const receipt = state.receipts.find((r) => r.id === req.params.id);

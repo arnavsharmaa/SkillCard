@@ -199,6 +199,19 @@ test('reset reseeds state and a stale run cannot pollute it', async () => {
   assert.equal(s.robots[0].spent, 340, 'Atlas-7 back to seed spend');
 });
 
+test('audit export snapshots the full durable state as an attachment', async () => {
+  await post('/api/reset');
+  await runTask('task-02', 'rbt-02');
+  const res = await fetch(`${BASE}/api/export`);
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-disposition') || '', /attachment; filename="skillcard-export-/);
+  const snap = await res.json();
+  assert.ok(snap.exportedAt && snap.version);
+  assert.equal(snap.receipts.length, 1);
+  assert.equal(snap.totalSaved, snap.receipts[0].netSaved);
+  assert.equal(snap.robots.length, 3);
+});
+
 test('state survives a full server restart (SQLite persistence)', async () => {
   await post('/api/reset');
   await runTask('task-01', 'rbt-01');

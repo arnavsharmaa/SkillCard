@@ -62,6 +62,25 @@ paths:
                 type: array
                 items: { $ref: "#/components/schemas/Receipt" }
 
+  /api/export:
+    get:
+      summary: Audit export — the full durable state as a downloadable JSON snapshot
+      responses:
+        "200":
+          description: Served with a Content-Disposition attachment filename
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exportedAt: { type: string, format: date-time }
+                  version: { type: string }
+                  totalSaved: { type: number }
+                  robots: { type: array, items: { $ref: "#/components/schemas/Robot" } }
+                  tasks: { type: array, items: { $ref: "#/components/schemas/Task" } }
+                  marketplace: { type: array, items: { $ref: "#/components/schemas/Skill" } }
+                  receipts: { type: array, items: { $ref: "#/components/schemas/Receipt" } }
+
   /api/receipts/{id}/acknowledge:
     post:
       summary: Finance review — acknowledge a flagged receipt
