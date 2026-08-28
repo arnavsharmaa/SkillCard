@@ -10,6 +10,11 @@ All notable changes to this project are documented here. The format follows
 - Request logging and graceful shutdown (SIGINT/SIGTERM persist + SQLite WAL flush).
 - `docs/ARCHITECTURE.md` — system, run-loop, and policy-engine walkthrough with diagrams.
 - `docs/openapi.yaml` — OpenAPI 3.1 spec for the HTTP API, with a route drift-guard test.
+- `GET /api/export` — downloadable, versioned audit snapshot of the durable state.
+- `/api/health` now reports the package version and process uptime.
+- Unit tests for the policy engine (every rule, precedence order, ceiling boundary).
+- `docs/DECISIONS.md` — architecture decision records (ADR-001..006).
+- `npm run check` — one-command lint + build + test, matching CI.
 
 ## [0.4.0] — 2026-08-25
 

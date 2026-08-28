@@ -301,7 +301,6 @@ app.get('/api/run/:taskId', async (req, res) => {
 
 // ---- JSON fallthroughs: the API never returns HTML error pages -------------
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Unknown endpoint.' }));
-// eslint-disable-next-line no-unused-vars -- Express identifies error handlers by arity
 app.use((err, _req, res, _next) => {
   console.error('[API error]', err);
   res.status(500).json({ error: 'Internal error.' });

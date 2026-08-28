@@ -14,10 +14,10 @@ npm run install:all
 npm run dev                 # API on :3001, client on :5173
 ```
 
-Run the test suite before opening a pull request:
+Run the full local gate (same steps as CI) before opening a pull request:
 
 ```bash
-npm test
+npm run check       # lint + client build + test suite
 ```
 
 The suite boots the server on a scratch port with `RUN_STUBBED=1`, so it needs no API key
