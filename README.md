@@ -124,7 +124,8 @@ CI runs both on every push and pull request across Node 22 and 24. See
 
 ## Architecture
 
-A deeper walkthrough with diagrams lives in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+A deeper walkthrough with diagrams lives in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md);
+design rationale is recorded as ADRs in [docs/DECISIONS.md](docs/DECISIONS.md).
 
 ```
 server/

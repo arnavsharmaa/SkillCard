@@ -1,5 +1,7 @@
 # Architecture
 
+> The reasoning behind these choices is recorded in [DECISIONS.md](DECISIONS.md).
+
 SkillCard is two processes in one repository: a **React client** (Vite + Tailwind) and an
 **Express server** that owns all state and all governance decisions. The client is a thin
 view; nothing that authorizes spend runs in the browser.
