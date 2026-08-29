@@ -23,6 +23,26 @@ app.use(cors({ origin: ALLOWED_ORIGINS }));
 // The only JSON bodies are tiny decision payloads — cap them well below the default.
 app.use(express.json({ limit: '10kb' }));
 
+// Per-IP sliding-window rate limit (dependency-free). RATE_LIMIT_RPM=0 disables;
+// the default is generous — this is abuse protection, not throttling.
+const RATE_LIMIT_RPM = process.env.RATE_LIMIT_RPM != null ? Number(process.env.RATE_LIMIT_RPM) : 300;
+if (RATE_LIMIT_RPM > 0) {
+  const WINDOW_MS = 60_000;
+  const hits = new Map(); // ip -> [timestamps]
+  app.use('/api', (req, res, next) => {
+    const now = Date.now();
+    const recent = (hits.get(req.ip) || []).filter((t) => now - t < WINDOW_MS);
+    if (recent.length >= RATE_LIMIT_RPM) {
+      res.setHeader('Retry-After', Math.ceil((recent[0] + WINDOW_MS - now) / 1000));
+      return res.status(429).json({ error: 'Too many requests — slow down.' });
+    }
+    recent.push(now);
+    hits.set(req.ip, recent);
+    if (hits.size > 10_000) hits.clear(); // unbounded-growth guard
+    next();
+  });
+}
+
 // Request log: method, path, status, duration. Silenced in tests (RUN_STUBBED)
 // and skipped for health polls to keep the log signal-heavy.
 if (process.env.RUN_STUBBED !== '1') {
