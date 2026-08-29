@@ -7,7 +7,9 @@ info:
     Server-Sent Events; every decision that moves money is deterministic server
     code, and human decisions (approval, override, operator, review) resume
     through their own endpoints. No authentication — intended to run locally or
-    behind your own access controls (see SECURITY.md).
+    behind your own access controls (see SECURITY.md). All endpoints share a
+    per-IP rate limit (HTTP 429 with Retry-After when exceeded) and a 10 kB
+    JSON body cap (HTTP 413).
   license:
     name: MIT
     url: https://github.com/arnavsharmaa/SkillCard/blob/main/LICENSE

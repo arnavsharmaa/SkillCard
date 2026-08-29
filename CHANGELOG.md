@@ -15,6 +15,9 @@ All notable changes to this project are documented here. The format follows
 - Unit tests for the policy engine (every rule, precedence order, ceiling boundary).
 - `docs/DECISIONS.md` — architecture decision records (ADR-001..006).
 - `npm run check` — one-command lint + build + test, matching CI.
+- CORS allowlist, 10 kB JSON body cap with clean 413/400 responses, and per-IP
+  rate limiting with Retry-After (`RATE_LIMIT_RPM`).
+- Unit tests for the spend-alert and anomaly helpers.
 
 ## [0.4.0] — 2026-08-25
 
