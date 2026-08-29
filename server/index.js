@@ -11,8 +11,17 @@ import { MODEL } from './openai.js';
 import { loadState, saveState, closeStore } from './store.js';
 
 const app = express();
-app.use(cors());
-app.use(express.json());
+
+// CORS allowlist. The dev client reaches the API through Vite's same-origin
+// proxy, so this only matters for direct cross-origin use of the API. Override
+// with a comma-separated CORS_ORIGIN env for other deployments.
+const ALLOWED_ORIGINS = (process.env.CORS_ORIGIN || 'http://localhost:5173')
+  .split(',')
+  .map((o) => o.trim());
+app.use(cors({ origin: ALLOWED_ORIGINS }));
+
+// The only JSON bodies are tiny decision payloads — cap them well below the default.
+app.use(express.json({ limit: '10kb' }));
 
 // Request log: method, path, status, duration. Silenced in tests (RUN_STUBBED)
 // and skipped for health polls to keep the log signal-heavy.
@@ -302,6 +311,9 @@ app.get('/api/run/:taskId', async (req, res) => {
 // ---- JSON fallthroughs: the API never returns HTML error pages -------------
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Unknown endpoint.' }));
 app.use((err, _req, res, _next) => {
+  // Body-parser errors are client mistakes, not server faults.
+  if (err.type === 'entity.too.large') return res.status(413).json({ error: 'Request body too large.' });
+  if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'Malformed JSON body.' });
   console.error('[API error]', err);
   res.status(500).json({ error: 'Internal error.' });
 });

@@ -199,6 +199,26 @@ test('reset reseeds state and a stale run cannot pollute it', async () => {
   assert.equal(s.robots[0].spent, 340, 'Atlas-7 back to seed spend');
 });
 
+test('CORS allows only the configured origin; body limits return clean 4xx', async () => {
+  const allowed = await fetch(`${BASE}/api/health`, { headers: { Origin: 'http://localhost:5173' } });
+  assert.equal(allowed.headers.get('access-control-allow-origin'), 'http://localhost:5173');
+  const denied = await fetch(`${BASE}/api/health`, { headers: { Origin: 'https://evil.example' } });
+  assert.equal(denied.headers.get('access-control-allow-origin'), null);
+
+  const huge = await fetch(`${BASE}/api/skill-choice/x`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ skillId: 'x'.repeat(20000) }),
+  });
+  assert.equal(huge.status, 413);
+  const malformed = await fetch(`${BASE}/api/skill-choice/x`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{not json',
+  });
+  assert.equal(malformed.status, 400);
+});
+
 test('audit export snapshots the full durable state as an attachment', async () => {
   await post('/api/reset');
   await runTask('task-02', 'rbt-02');
