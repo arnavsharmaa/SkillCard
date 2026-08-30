@@ -33,14 +33,14 @@
   "dependencies": {
     "better-sqlite3": "^13.0.3",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "openai": "^4.56.0"
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "openai": "^7.7.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "concurrently": "^8.2.2",
-    "eslint": "^10.9.0",
+    "concurrently": "^10.0.5",
+    "eslint": "^10.9.1",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.11.0",
     "js-yaml": "^5.4.1"
