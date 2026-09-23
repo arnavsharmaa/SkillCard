@@ -37,6 +37,15 @@ paths:
                     type: [string, "null"]
                     enum: [openai, fallback, stub, null]
 
+  /api/docs:
+    get:
+      summary: This spec, served as YAML by the running API
+      responses:
+        "200":
+          content:
+            text/yaml:
+              schema: { type: string }
+
   /api/state:
     get:
       summary: Full working state — robots, tasks, marketplace, receipts, savings

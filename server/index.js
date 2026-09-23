@@ -108,6 +108,12 @@ app.get('/api/state', (_req, res) => {
 
 app.get('/api/receipts', (_req, res) => res.json(state.receipts));
 
+// ---- The API contract, served by the API itself ---------------------------
+const SPEC_PATH = new URL('../docs/openapi.yaml', import.meta.url);
+app.get('/api/docs', (_req, res) => {
+  res.type('text/yaml; charset=utf-8').send(fs.readFileSync(SPEC_PATH, 'utf8'));
+});
+
 // ---- Audit export: the durable state as a downloadable, versioned snapshot --
 app.get('/api/export', (_req, res) => {
   const snapshot = {

@@ -219,6 +219,15 @@ test('CORS allows only the configured origin; body limits return clean 4xx', asy
   assert.equal(malformed.status, 400);
 });
 
+test('the API serves its own OpenAPI spec as YAML', async () => {
+  const res = await fetch(`${BASE}/api/docs`);
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-type') || '', /yaml/);
+  const body = await res.text();
+  assert.match(body, /^openapi: 3\.1\.0/);
+  assert.match(body, /title: SkillCard API/);
+});
+
 test('audit export snapshots the full durable state as an attachment', async () => {
   await post('/api/reset');
   await runTask('task-02', 'rbt-02');
