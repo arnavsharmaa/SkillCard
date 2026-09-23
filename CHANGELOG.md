@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-09-23
+
 ### Added
 - Request logging and graceful shutdown (SIGINT/SIGTERM persist + SQLite WAL flush).
 - `docs/ARCHITECTURE.md` — system, run-loop, and policy-engine walkthrough with diagrams.
@@ -18,6 +20,9 @@ All notable changes to this project are documented here. The format follows
 - CORS allowlist, 10 kB JSON body cap with clean 413/400 responses, and per-IP
   rate limiting with Retry-After (`RATE_LIMIT_RPM`).
 - Unit tests for the spend-alert and anomaly helpers.
+- `GET /api/docs` — the running API serves its own OpenAPI spec as YAML.
+- SQLite store unit tests: exact round-tripping, receipt ordering, replacement
+  semantics, and optional-field fidelity.
 
 ## [0.4.0] — 2026-08-25
 
@@ -79,7 +84,8 @@ All notable changes to this project are documented here. The format follows
   two strict-JSON model calls with deterministic fallbacks, human-operator escalation,
   and the Live Run / Receipts / Fleet views.
 
-[Unreleased]: https://github.com/arnavsharmaa/SkillCard/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/arnavsharmaa/SkillCard/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/arnavsharmaa/SkillCard/releases/tag/v0.5.0
 [0.4.0]: https://github.com/arnavsharmaa/SkillCard/releases/tag/v0.4.0
 [0.3.0]: https://github.com/arnavsharmaa/SkillCard/releases/tag/v0.3.0
 [0.2.0]: https://github.com/arnavsharmaa/SkillCard/releases/tag/v0.2.0

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: SkillCard API
-  version: 0.4.0
+  version: 0.5.0
   description: >
     Spend-governance API for autonomous machines. The run loop streams over
     Server-Sent Events; every decision that moves money is deterministic server
