@@ -19,8 +19,10 @@ released on `main` and the reporter credited (unless they prefer otherwise).
 
 ## Scope notes
 
-- SkillCard ships with **no authentication** and is intended to run locally or behind your
-  own access controls. Exposing the API to an untrusted network is outside the supported
+- SkillCard ships with **auth off by default** and is intended to run locally or behind your
+  own access controls. For any shared deployment, set `SKILLCARD_API_TOKEN` — every mutating
+  endpoint then requires `Authorization: Bearer <token>` (constant-time comparison; reads
+  stay open). Exposing an untokened API to an untrusted network is outside the supported
   threat model. Defense-in-depth that is in place: a CORS allowlist (`CORS_ORIGIN`),
   a 10 kB JSON body cap, per-IP rate limiting (`RATE_LIMIT_RPM`, default 300/min), and
   JSON-only error responses.

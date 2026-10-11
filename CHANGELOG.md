@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- Opt-in bearer-token auth: setting `SKILLCARD_API_TOKEN` requires
+  `Authorization: Bearer <token>` on every mutating endpoint (constant-time
+  comparison, 401 + `WWW-Authenticate`, auth checked before validation).
+  Reads and the SSE stream stay open; unset means no auth, as before.
+
 ## [0.5.0] — 2026-09-23
 
 ### Added
