@@ -53,7 +53,8 @@ if (API_TOKEN) {
   const expected = Buffer.from(API_TOKEN);
   app.use('/api', (req, res, next) => {
     if (req.method === 'GET' || req.method === 'OPTIONS' || req.method === 'HEAD') return next();
-    const supplied = Buffer.from((req.get('authorization') || '').replace(/^Bearer\s+/i, ''));
+    const match = /^Bearer\s+(.+)$/i.exec(req.get('authorization') || '');
+    const supplied = Buffer.from(match ? match[1] : '');
     const ok = supplied.length === expected.length && crypto.timingSafeEqual(supplied, expected);
     if (!ok) {
       res.setHeader('WWW-Authenticate', 'Bearer');
