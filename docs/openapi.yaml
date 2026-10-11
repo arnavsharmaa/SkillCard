@@ -7,7 +7,9 @@ info:
     Server-Sent Events; every decision that moves money is deterministic server
     code, and human decisions (approval, override, operator, review) resume
     through their own endpoints. No authentication — intended to run locally or
-    behind your own access controls (see SECURITY.md). All endpoints share a
+    behind your own access controls (see SECURITY.md). Setting the
+    SKILLCARD_API_TOKEN environment variable turns on bearer-token auth for
+    every mutating (non-GET) endpoint; reads stay open. All endpoints share a
     per-IP rate limit (HTTP 429 with Retry-After when exceeded) and a 10 kB
     JSON body cap (HTTP 413).
   license:
@@ -98,6 +100,7 @@ paths:
       parameters:
         - { name: id, in: path, required: true, schema: { type: string } }
       responses:
+        "401": { $ref: "#/components/responses/Unauthorized" }
         "200":
           content:
             application/json:
@@ -112,6 +115,7 @@ paths:
     post:
       summary: Batch all unsettled charges into per-vendor payouts (idempotent)
       responses:
+        "401": { $ref: "#/components/responses/Unauthorized" }
         "200":
           content:
             application/json:
@@ -133,6 +137,7 @@ paths:
     post:
       summary: Reseed all state (also invalidates in-flight runs via the generation guard)
       responses:
+        "401": { $ref: "#/components/responses/Unauthorized" }
         "200":
           content:
             application/json:
@@ -180,6 +185,7 @@ paths:
       parameters:
         - { name: receiptId, in: path, required: true, schema: { type: string } }
       responses:
+        "401": { $ref: "#/components/responses/Unauthorized" }
         "200": { $ref: "#/components/responses/Finalized" }
         "404": { $ref: "#/components/responses/NotFound" }
 
@@ -198,6 +204,7 @@ paths:
               properties:
                 skillId: { type: string }
       responses:
+        "401": { $ref: "#/components/responses/Unauthorized" }
         "200": { $ref: "#/components/responses/Finalized" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -208,6 +215,7 @@ paths:
       parameters:
         - { name: receiptId, in: path, required: true, schema: { type: string } }
       responses:
+        "401": { $ref: "#/components/responses/Unauthorized" }
         "200": { $ref: "#/components/responses/Finalized" }
         "404": { $ref: "#/components/responses/NotFound" }
 
@@ -217,11 +225,23 @@ paths:
       parameters:
         - { name: escalationId, in: path, required: true, schema: { type: string } }
       responses:
+        "401": { $ref: "#/components/responses/Unauthorized" }
         "200": { $ref: "#/components/responses/Finalized" }
         "404": { $ref: "#/components/responses/NotFound" }
 
 components:
+  securitySchemes:
+    bearerToken:
+      type: http
+      scheme: bearer
+      description: Required on mutating endpoints only when SKILLCARD_API_TOKEN is set.
+
   responses:
+    Unauthorized:
+      description: Missing or invalid bearer token (auth is enabled on this deployment)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
     NotFound:
       description: Unknown id
       content:

@@ -1,7 +1,9 @@
 // SkillCard server — Express + SSE stream for the core loop, with SQLite
-// persistence so state survives restarts. No auth.
+// persistence so state survives restarts. Auth is opt-in: set
+// SKILLCARD_API_TOKEN to require a bearer token on every mutating endpoint.
 
 import 'dotenv/config';
+import crypto from 'crypto';
 import fs from 'fs';
 import express from 'express';
 import cors from 'cors';
@@ -39,6 +41,24 @@ if (RATE_LIMIT_RPM > 0) {
     recent.push(now);
     hits.set(req.ip, recent);
     if (hits.size > 10_000) hits.clear(); // unbounded-growth guard
+    next();
+  });
+}
+
+// Opt-in write protection: when SKILLCARD_API_TOKEN is set, every mutating
+// (non-GET) endpoint requires `Authorization: Bearer <token>`. Reads and the
+// SSE run stream stay open — they move no money. Comparison is constant-time.
+const API_TOKEN = process.env.SKILLCARD_API_TOKEN || '';
+if (API_TOKEN) {
+  const expected = Buffer.from(API_TOKEN);
+  app.use('/api', (req, res, next) => {
+    if (req.method === 'GET' || req.method === 'OPTIONS' || req.method === 'HEAD') return next();
+    const supplied = Buffer.from((req.get('authorization') || '').replace(/^Bearer\s+/i, ''));
+    const ok = supplied.length === expected.length && crypto.timingSafeEqual(supplied, expected);
+    if (!ok) {
+      res.setHeader('WWW-Authenticate', 'Bearer');
+      return res.status(401).json({ error: 'A valid bearer token is required for this action.' });
+    }
     next();
   });
 }
